@@ -1,15 +1,13 @@
-// --- IMPERIUM NOTARY - MAIN CONTROLLER ---
+// --- IMPERIUM NOTARY - MAIN CONTROLLER (con popup custom migliorato) ---
 
-// 🧩 PARAMETRI GLOBALI
 window.IMPERIUM_CONFIG = {
   appName: "Imperium Notary",
   appIcon: "https://www.bitcoinconsultingusa.com/favicon.ico",
   feeUSD: 15.0,
-  version: "0.1.0",
+  version: "0.2.0",
   debug: true,
 };
 
-// 🧠 Utility globale di log
 window.IMPERIUM_LOG = function (msg) {
   const logBox = document.getElementById("log");
   console.log(`[LOG] ${msg}`);
@@ -19,15 +17,32 @@ window.IMPERIUM_LOG = function (msg) {
   }
 };
 
-// 🔧 Inizializzazione dei moduli principali
+function showPopup(message) {
+  const popup = document.createElement("div");
+  popup.style.position = "fixed";
+  popup.style.top = "20%";
+  popup.style.left = "50%";
+  popup.style.transform = "translateX(-50%)";
+  popup.style.background = "#222";
+  popup.style.color = "#ffa500";
+  popup.style.padding = "20px 30px";
+  popup.style.borderRadius = "8px";
+  popup.style.boxShadow = "0 0 10px rgba(0,0,0,0.5)";
+  popup.style.zIndex = "1000";
+  popup.style.fontSize = "16px";
+  popup.textContent = message;
+  document.body.appendChild(popup);
+  setTimeout(() => {
+    popup.remove();
+  }, 3000);
+}
+
 (async function initImperium() {
   try {
     IMPERIUM_LOG("🚀 Starting Imperium Notary v" + IMPERIUM_CONFIG.version);
 
-    // Carica il modulo di connessione
     await import("./connection.js");
 
-    // Inizializza la connessione (modulo esterno)
     if (window.IMPERIUM_Connection && window.IMPERIUM_Connection.init) {
       window.IMPERIUM_Connection.init();
     }
@@ -36,5 +51,6 @@ window.IMPERIUM_LOG = function (msg) {
   } catch (err) {
     console.error("❌ Initialization error:", err);
     IMPERIUM_LOG("❌ Error initializing modules: " + err.message);
+    showPopup("Initialization failed: " + err.message);
   }
 })();
