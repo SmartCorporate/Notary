@@ -1,12 +1,117 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Notary Test Page</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IMPERIUM NOTARY</title>
+  <style>
+    /* === GLOBAL STYLE === */
+    body {
+      margin: 0;
+      background-color: #0d0d0d;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      color: #f1f1f1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+
+    h1 {
+      color: #ff7a00;
+      font-size: 2.8rem;
+      letter-spacing: 2px;
+      margin-bottom: 0.5rem;
+    }
+
+    p {
+      color: #999;
+      margin-top: 0;
+      font-size: 1rem;
+    }
+
+    /* === CARD === */
+    .card {
+      background: #1b1b1b;
+      border: 1px solid #333;
+      border-radius: 12px;
+      padding: 2rem;
+      width: 90%;
+      max-width: 500px;
+      box-shadow: 0 0 15px rgba(255, 122, 0, 0.2);
+      text-align: center;
+      transition: 0.3s ease;
+    }
+
+    .card:hover {
+      box-shadow: 0 0 25px rgba(255, 122, 0, 0.4);
+    }
+
+    /* === FORM === */
+    input[type="text"] {
+      width: 100%;
+      padding: 0.8rem;
+      margin-top: 1rem;
+      border-radius: 8px;
+      border: none;
+      background: #2c2c2c;
+      color: #fff;
+      font-size: 1rem;
+      outline: none;
+    }
+
+    button {
+      margin-top: 1.5rem;
+      padding: 0.8rem 1.2rem;
+      border: none;
+      border-radius: 8px;
+      background: linear-gradient(90deg, #ff7a00, #ffb347);
+      color: #0d0d0d;
+      font-weight: bold;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 15px rgba(255, 122, 0, 0.6);
+    }
+
+    /* === MESSAGE AREA === */
+    #result {
+      margin-top: 1.5rem;
+      font-size: 0.9rem;
+      color: #ffb347;
+    }
+  </style>
 </head>
 <body>
-  <h1>Hello from Notary — Version 44 ⚡</h1>
-<p>Auto-deploy test successful!</p>
+  <h1>IMPERIUM NOTARY</h1>
+  <p>Write a permanent message on Bitcoin (simulation)</p>
+
+  <div class="card">
+    <input id="messageInput" type="text" placeholder="Type your message..." />
+    <button onclick="publishMessage()">Publish</button>
+    <div id="result"></div>
+  </div>
+
+  <script>
+    function publishMessage() {
+      const input = document.getElementById("messageInput");
+      const result = document.getElementById("result");
+
+      if (input.value.trim() === "") {
+        result.innerHTML = "⚠️ Please enter a message first.";
+        return;
+      }
+
+      // simulate "notarization" (later will connect to Stacks or Ordinals)
+      const hash = btoa(input.value + Date.now()).slice(0, 16);
+      result.innerHTML = `✅ Message recorded: <br><b>${input.value}</b><br>TXID: <span style="color:#ff7a00">${hash}</span>`;
+      input.value = "";
+    }
+  </script>
 </body>
 </html>
