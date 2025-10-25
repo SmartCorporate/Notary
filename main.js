@@ -1,93 +1,40 @@
-import {
-  AppConfig,
-  UserSession,
-  showConnect,
-} from "https://cdn.jsdelivr.net/npm/@stacks/connect@7.2.0/dist/index.esm.js";
+// --- IMPERIUM NOTARY - MAIN CONTROLLER ---
 
-const statusDot = document.getElementById("wallet-status");
-const walletText = document.getElementById("wallet-text");
-const connectBtn = document.getElementById("connect-btn");
-const disconnectBtn = document.getElementById("disconnect-btn");
-const debugBox = document.getElementById("debug");
-const logBox = document.getElementById("log");
-
-const appConfig = new AppConfig(["store_write"]);
-const userSession = new UserSession({ appConfig });
-
-const appDetails = {
-  name: "Imperium Notary",
-  icon: "https://www.bitcoinconsultingusa.com/favicon.ico",
+// 🧩 PARAMETRI GLOBALI
+window.IMPERIUM_CONFIG = {
+  appName: "Imperium Notary",
+  appIcon: "https://www.bitcoinconsultingusa.com/favicon.ico",
+  feeUSD: 15.0,
+  version: "0.1.0",
+  debug: true,
 };
 
-function log(msg) {
-  console.log(msg);
-  logBox.textContent += `\n${msg}`;
-  logBox.scrollTop = logBox.scrollHeight;
-}
-
-function setStatus(connected, address = "") {
-  if (connected) {
-    statusDot.classList.remove("red");
-    statusDot.classList.add("green");
-    walletText.textContent = `Wallet: ${address}`;
-    connectBtn.classList.add("hidden");
-    disconnectBtn.classList.remove("hidden");
-  } else {
-    statusDot.classList.remove("green");
-    statusDot.classList.add("red");
-    walletText.textContent = "Wallet: disconnected";
-    connectBtn.classList.remove("hidden");
-    disconnectBtn.classList.add("hidden");
+// 🧠 Utility globale di log
+window.IMPERIUM_LOG = function (msg) {
+  const logBox = document.getElementById("log");
+  console.log(`[LOG] ${msg}`);
+  if (logBox) {
+    logBox.textContent += `\n${msg}`;
+    logBox.scrollTop = logBox.scrollHeight;
   }
-}
+};
 
-function connectWallet() {
-  debugBox.textContent = "Debug: opening wallet...";
-  log("🟠 Opening Leather wallet popup...");
+// 🔧 Inizializzazione dei moduli principali
+(async function initImperium() {
+  try {
+    IMPERIUM_LOG("🚀 Starting Imperium Notary v" + IMPERIUM_CONFIG.version);
 
-  showConnect({
-    appDetails,
-    onFinish: () => {
-      const data = userSession.loadUserData();
-      const addr = data.profile?.stxAddress?.mainnet || "Unknown";
-      setStatus(true, addr);
-      debugBox.textContent = "Debug: wallet connected";
-      log(`✅ Wallet connected: ${addr}`);
-    },
-    onCancel: () => {
-      debugBox.textContent = "Debug: connection canceled";
-      log("❌ Wallet connection canceled");
-    },
-    userSession,
-  });
-}
+    // Carica il modulo di connessione
+    await import("./connection.js");
 
-function disconnectWallet() {
-  if (userSession.isUserSignedIn()) {
-    userSession.signUserOut();
-    setStatus(false);
-    debugBox.textContent = "Debug: disconnected";
-    log("🔴 Wallet disconnected");
+    // Inizializza la connessione (modulo esterno)
+    if (window.IMPERIUM_Connection && window.IMPERIUM_Connection.init) {
+      window.IMPERIUM_Connection.init();
+    }
+
+    IMPERIUM_LOG("✅ System initialized successfully.");
+  } catch (err) {
+    console.error("❌ Initialization error:", err);
+    IMPERIUM_LOG("❌ Error initializing modules: " + err.message);
   }
-}
-
-// Initialize
-if (userSession.isSignInPending()) {
-  debugBox.textContent = "Debug: completing pending sign-in...";
-  userSession.handlePendingSignIn().then((userData) => {
-    const addr = userData.profile?.stxAddress?.mainnet;
-    setStatus(true, addr);
-    log(`✅ Signed in as: ${addr}`);
-  });
-} else if (userSession.isUserSignedIn()) {
-  const data = userSession.loadUserData();
-  const addr = data.profile?.stxAddress?.mainnet;
-  setStatus(true, addr);
-  log(`✅ Wallet already connected: ${addr}`);
-} else {
-  setStatus(false);
-  log("❌ Wallet not connected");
-}
-
-connectBtn.addEventListener("click", connectWallet);
-disconnectBtn.addEventListener("click", disconnectWallet);
+})();
