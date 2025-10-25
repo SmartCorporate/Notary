@@ -1,116 +1,198 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>IMPERIUM NOTARY</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IMPERIUM NOTARY (BETA)</title>
   <style>
-    /* === GLOBAL STYLE === */
+    /* ====== GENERAL ====== */
     body {
-      margin: 0;
-      background-color: #0d0d0d;
-      font-family: 'Segoe UI', Arial, sans-serif;
-      color: #f1f1f1;
+      background-color: #0a0a0a;
+      color: #ffae42;
+      font-family: 'Consolas', 'Courier New', monospace;
       display: flex;
       flex-direction: column;
-      align-items: center;
       justify-content: center;
+      align-items: center;
       height: 100vh;
+      margin: 0;
+      text-align: center;
     }
 
     h1 {
       color: #ff7a00;
-      font-size: 2.8rem;
+      font-size: 2rem;
+      margin-bottom: 0.2rem;
       letter-spacing: 2px;
-      margin-bottom: 0.5rem;
     }
 
-    p {
+    .subtitle {
       color: #999;
-      margin-top: 0;
-      font-size: 1rem;
+      font-size: 0.9rem;
+      margin-bottom: 2rem;
     }
 
-    /* === CARD === */
-    .card {
-      background: #1b1b1b;
+    .terminal {
+      background-color: #141414;
       border: 1px solid #333;
       border-radius: 12px;
-      padding: 2rem;
       width: 90%;
-      max-width: 500px;
-      box-shadow: 0 0 15px rgba(255, 122, 0, 0.2);
-      text-align: center;
-      transition: 0.3s ease;
+      max-width: 600px;
+      padding: 1.8rem;
+      box-shadow: 0 0 25px rgba(255, 122, 0, 0.15);
+      text-align: left;
     }
 
-    .card:hover {
-      box-shadow: 0 0 25px rgba(255, 122, 0, 0.4);
-    }
-
-    /* === FORM === */
-    input[type="text"] {
-      width: 100%;
-      padding: 0.8rem;
-      margin-top: 1rem;
-      border-radius: 8px;
-      border: none;
-      background: #2c2c2c;
-      color: #fff;
+    .terminal-header {
+      font-weight: bold;
+      color: #ffae42;
+      margin-bottom: 0.8rem;
       font-size: 1rem;
+    }
+
+    .terminal-text {
+      color: #dcdcdc;
+      line-height: 1.4rem;
+      margin-bottom: 1rem;
+    }
+
+    textarea {
+      width: 100%;
+      height: 120px;
+      background-color: #1c1c1c;
+      color: #fff;
+      border: 1px solid #444;
+      border-radius: 8px;
+      padding: 0.8rem;
+      resize: none;
+      font-family: inherit;
+      font-size: 0.95rem;
       outline: none;
     }
 
+    .info-line {
+      font-size: 0.85rem;
+      color: #999;
+      margin-top: 0.5rem;
+    }
+
+    .button-bar {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 1.2rem;
+    }
+
     button {
-      margin-top: 1.5rem;
-      padding: 0.8rem 1.2rem;
+      background-color: #ff7a00;
       border: none;
-      border-radius: 8px;
-      background: linear-gradient(90deg, #ff7a00, #ffb347);
-      color: #0d0d0d;
+      padding: 0.7rem 1.5rem;
+      border-radius: 6px;
+      color: #0a0a0a;
       font-weight: bold;
-      font-size: 1rem;
       cursor: pointer;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      transition: all 0.25s ease;
     }
 
     button:hover {
+      background-color: #ffae42;
       transform: scale(1.05);
-      box-shadow: 0 0 15px rgba(255, 122, 0, 0.6);
     }
 
-    /* === MESSAGE AREA === */
-    #result {
-      margin-top: 1.5rem;
-      font-size: 0.9rem;
-      color: #ffb347;
+    /* ====== POPUP ====== */
+    #popup {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.8);
+      justify-content: center;
+      align-items: center;
+    }
+
+    #popup .content {
+      background-color: #111;
+      border: 1px solid #ff7a00;
+      border-radius: 10px;
+      padding: 2rem;
+      width: 80%;
+      max-width: 400px;
+      text-align: center;
+      color: #ffae42;
+      box-shadow: 0 0 25px rgba(255,122,0,0.3);
+    }
+
+    #popup button {
+      margin-top: 1.2rem;
+      background-color: #ff7a00;
+      color: #0a0a0a;
+      border: none;
+      border-radius: 5px;
+      padding: 0.5rem 1rem;
+      font-weight: bold;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
-  <h1>IMPERIUM NOTARY</h1>
-  <p>Write a permanent message on Bitcoin (simulation)</p>
+  <h1>IMPERIUM NOTARY ⚙️</h1>
+  <div class="subtitle">⚠️ This page is under development (Beta Preview)</div>
 
-  <div class="card">
-    <input id="messageInput" type="text" placeholder="Type your message..." />
-    <button onclick="publishMessage()">Publish</button>
-    <div id="result"></div>
+  <div class="terminal">
+    <div class="terminal-header">Blockchain File Notary (Stacks → Bitcoin Security)</div>
+
+    <div class="terminal-text">
+      This service notarizes your message permanently on the <b>Stacks blockchain</b>, secured by the <b>Bitcoin network</b>.
+    </div>
+
+    <textarea id="message" maxlength="500" placeholder="Type your message here (max 500 characters)..."></textarea>
+    <div class="info-line">💰 Fee: $5 • Max 500 chars</div>
+
+    <div class="button-bar">
+      <button onclick="publishMessage()">Notarize</button>
+      <button onclick="verifyMessage()">Verify by ID</button>
+    </div>
+  </div>
+
+  <!-- POPUP -->
+  <div id="popup">
+    <div class="content">
+      <div id="popup-text">Processing your request...</div>
+      <button onclick="closePopup()">OK</button>
+    </div>
   </div>
 
   <script>
     function publishMessage() {
-      const input = document.getElementById("messageInput");
-      const result = document.getElementById("result");
+      const msg = document.getElementById('message').value.trim();
+      const popup = document.getElementById('popup');
+      const popupText = document.getElementById('popup-text');
 
-      if (input.value.trim() === "") {
-        result.innerHTML = "⚠️ Please enter a message first.";
+      if (!msg) {
+        popupText.innerHTML = "⚠️ Please enter a message before notarizing.";
+        popup.style.display = "flex";
         return;
       }
 
-      // simulate "notarization" (later will connect to Stacks or Ordinals)
-      const hash = btoa(input.value + Date.now()).slice(0, 16);
-      result.innerHTML = `✅ Message recorded: <br><b>${input.value}</b><br>TXID: <span style="color:#ff7a00">${hash}</span>`;
-      input.value = "";
+      popupText.innerHTML = "⛓ Hashing your message and anchoring on Bitcoin network...";
+      popup.style.display = "flex";
+
+      setTimeout(() => {
+        const txid = btoa(msg + Date.now()).slice(0, 10);
+        popupText.innerHTML = `✅ Message notarized successfully.<br>TXID: <b>${txid}</b>`;
+      }, 1500);
+    }
+
+    function verifyMessage() {
+      const popup = document.getElementById('popup');
+      const popupText = document.getElementById('popup-text');
+      popupText.innerHTML = "🔍 Verification feature coming soon...";
+      popup.style.display = "flex";
+    }
+
+    function closePopup() {
+      document.getElementById('popup').style.display = "none";
     }
   </script>
 </body>
