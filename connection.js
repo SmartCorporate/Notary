@@ -1,4 +1,4 @@
-// --- IMPERIUM NOTARY - Leather Wallet Connection v0.8 (UI Clean + Dual LED) ---
+// --- IMPERIUM NOTARY - Leather Wallet Connection v0.9 (Bitcoin-only stable) ---
 window.IMPERIUM_Connection = {};
 
 (function () {
@@ -6,23 +6,15 @@ window.IMPERIUM_Connection = {};
   const walletText = document.getElementById("wallet-text");
   const connectBtn = document.getElementById("connect-btn");
   const disconnectBtn = document.getElementById("disconnect-btn");
-  const debugBox = document.getElementById("event-log");
   const ledMainnet = document.getElementById("led-mainnet");
   const ledTestnet = document.getElementById("led-testnet");
 
   let connectedBTC = null;
   let connectedSTX = null;
-  let networkType = "unknown";
 
+  // --- log utility ---
   function log(msg) {
     window.IMPERIUM_LOG(msg);
-  }
-
-  function detectStacksNetwork(address) {
-    if (!address) return "unknown";
-    if (address.startsWith("SP")) return "mainnet";
-    if (address.startsWith("ST")) return "testnet";
-    return "unknown";
   }
 
   function resetLeds() {
@@ -32,27 +24,18 @@ window.IMPERIUM_Connection = {};
     ledTestnet.classList.add("gray");
   }
 
-  function setNetworkLeds(network) {
-    resetLeds();
-    if (network === "mainnet") ledMainnet.classList.replace("gray", "green");
-    if (network === "testnet") ledTestnet.classList.replace("gray", "green");
-  }
-
-  function setStatus(connected, stx = "", btc = "", network = "") {
+  function setStatus(connected, btc = "", stx = "") {
     if (connected) {
       statusDot.classList.remove("red");
       statusDot.classList.add("green");
 
       let label = "";
-      if (stx) label += `STX: ${stx}\n`;
       if (btc) label += `BTC: ${btc}`;
-      if (!stx && !btc) label = "Wallet connected (no address returned)";
-
+      else label = "Wallet connected (no address returned)";
       walletText.textContent = label;
+
       connectBtn.classList.add("hidden");
       disconnectBtn.classList.remove("hidden");
-
-      setNetworkLeds(network);
     } else {
       statusDot.classList.remove("green");
       statusDot.classList.add("red");
@@ -67,27 +50,13 @@ window.IMPERIUM_Connection = {};
     let response = null;
 
     try {
-      response = await provider.request("stx_getAddresses");
-      if (response?.result?.addresses?.length > 0) return response;
-    } catch {}
-
-    try {
       response = await provider.request("getAddresses");
       if (response?.result?.addresses?.length > 0) return response;
     } catch {}
 
     try {
-      response = await provider.request("stx_getAccounts");
-      if (response?.result?.accounts?.length > 0) {
-        return {
-          result: {
-            addresses: response.result.accounts.map(acc => ({
-              address: acc.address,
-              type: "stacks",
-            })),
-          },
-        };
-      }
+      response = await provider.request("stx_getAddresses");
+      if (response?.result?.addresses?.length > 0) return response;
     } catch {}
 
     throw new Error("No usable address source from Leather Wallet");
@@ -98,7 +67,7 @@ window.IMPERIUM_Connection = {};
       const provider = window.LeatherProvider || window.LeatherWallet;
       if (!provider) {
         alert("Please install the Leather Wallet extension and reload the page.");
-        log("Leather wallet not detected.");
+        log("Leather Wallet extension not detected.");
         return;
       }
 
@@ -115,14 +84,14 @@ window.IMPERIUM_Connection = {};
 
         connectedBTC = btc ? btc.address : null;
         connectedSTX = stx ? stx.address : null;
-        networkType = detectStacksNetwork(connectedSTX);
 
-        setStatus(true, connectedSTX, connectedBTC, networkType);
+        setStatus(true, connectedBTC, connectedSTX);
 
         log("Connected successfully.");
         if (connectedBTC) log(`BTC address: ${connectedBTC}`);
-        if (connectedSTX)
-          log(`STX address: ${connectedSTX} (${networkType.toUpperCase()})`);
+        else log("⚠️ No Bitcoin address detected.");
+
+        if (connectedSTX) log(`STX address: ${connectedSTX}`);
       } else {
         log("⚠️ No usable addresses returned from Leather.");
       }
@@ -135,7 +104,6 @@ window.IMPERIUM_Connection = {};
   function disconnectWallet() {
     connectedBTC = null;
     connectedSTX = null;
-    networkType = "unknown";
     setStatus(false);
     log("Wallet disconnected manually.");
   }
@@ -143,11 +111,10 @@ window.IMPERIUM_Connection = {};
   function init() {
     log("Initializing Leather Wallet connection...");
     setStatus(false);
+    resetLeds();
 
     connectBtn.addEventListener("click", connectWallet);
     disconnectBtn.addEventListener("click", disconnectWallet);
-
-    resetLeds();
 
     if (window.LeatherProvider || window.LeatherWallet) {
       log("✅ Leather Wallet extension detected and ready.");
