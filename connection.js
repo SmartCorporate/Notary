@@ -1,10 +1,9 @@
 // --- IMPERIUM NOTARY - MODULE: connection.js ---
 
-// Crea namespace globale
 window.IMPERIUM_Connection = {};
 
 (function () {
-  const { appName, appIcon, debug } = window.IMPERIUM_CONFIG;
+  const { appName, appIcon } = window.IMPERIUM_CONFIG;
 
   const statusDot = document.getElementById("wallet-status");
   const walletText = document.getElementById("wallet-text");
@@ -14,19 +13,46 @@ window.IMPERIUM_Connection = {};
 
   let userSession = null;
 
-  // Carica la libreria Stacks Connect dinamicamente
-  function loadStacksScript() {
+  // ✅ CDN principale + fallback
+  const STACKS_CDN_PRIMARY = "https://cdn.jsdelivr.net/npm/@stacks/connect@7.4.0/dist/connect.umd.min.js";
+  const STACKS_CDN_BACKUP = "https://unpkg.com/@stacks/connect@7.4.0/dist/connect.umd.js";
+
+  // --- Carica dinamicamente la libreria Stacks ---
+  async function loadStacksScript() {
     return new Promise((resolve, reject) => {
-      if (window.StacksConnect) return resolve();
+      if (window.StacksConnect) return resolve("already loaded");
+
       const script = document.createElement("script");
-      script.src = "https://unpkg.com/@stacks/connect@7.4.0/dist/connect.umd.js";
-      script.onload = () => resolve();
-      script.onerror = () => reject("Failed to load Stacks library");
+      script.src = STACKS_CDN_PRIMARY;
+      script.async = true;
+
+      script.onload = () => {
+        if (window.StacksConnect) {
+          IMPERIUM_LOG("✅ Loaded StacksConnect from jsDelivr");
+          resolve("primary");
+        } else reject("StacksConnect missing after primary load");
+      };
+
+      script.onerror = () => {
+        IMPERIUM_LOG("⚠️ Primary CDN failed, trying backup...");
+        const backup = document.createElement("script");
+        backup.src = STACKS_CDN_BACKUP;
+        backup.async = true;
+        backup.onload = () => {
+          if (window.StacksConnect) {
+            IMPERIUM_LOG("✅ Loaded StacksConnect from unpkg backup");
+            resolve("backup");
+          } else reject("StacksConnect missing after backup load");
+        };
+        backup.onerror = () => reject("Both CDN sources failed");
+        document.head.appendChild(backup);
+      };
+
       document.head.appendChild(script);
     });
   }
 
-  // Aggiorna interfaccia visiva
+  // --- UI helper ---
   function setStatus(connected, address = "") {
     if (connected) {
       statusDot.classList.remove("red");
@@ -43,19 +69,17 @@ window.IMPERIUM_Connection = {};
     }
   }
 
-  // --- Funzione di connessione ---
-  async function connectWallet() {
-    debugBox.textContent = "Debug: opening wallet...";
-    IMPERIUM_LOG("🟠 Opening Leather wallet popup...");
-
+  // --- Connect wallet ---
+  function connectWallet() {
     const { showConnect, AppConfig, UserSession } = window.StacksConnect;
     const appConfig = new AppConfig(["store_write"]);
     userSession = new UserSession({ appConfig });
 
-    const appDetails = { name: appName, icon: appIcon };
+    debugBox.textContent = "Debug: opening wallet...";
+    IMPERIUM_LOG("🟠 Opening Leather wallet popup...");
 
     showConnect({
-      appDetails,
+      appDetails: { name: appName, icon: appIcon },
       userSession,
       onFinish: () => {
         const data = userSession.loadUserData();
@@ -71,7 +95,7 @@ window.IMPERIUM_Connection = {};
     });
   }
 
-  // --- Disconnessione ---
+  // --- Disconnect wallet ---
   function disconnectWallet() {
     if (userSession?.isUserSignedIn()) {
       userSession.signUserOut();
@@ -81,12 +105,12 @@ window.IMPERIUM_Connection = {};
     }
   }
 
-  // --- INIT ---
+  // --- Init function ---
   async function init() {
     try {
       await loadStacksScript();
-      const { AppConfig, UserSession } = window.StacksConnect;
 
+      const { AppConfig, UserSession } = window.StacksConnect;
       const appConfig = new AppConfig(["store_write"]);
       userSession = new UserSession({ appConfig });
 
@@ -111,7 +135,7 @@ window.IMPERIUM_Connection = {};
       disconnectBtn.addEventListener("click", disconnectWallet);
       IMPERIUM_LOG("🧩 Connection module ready.");
     } catch (err) {
-      IMPERIUM_LOG("⚠️ Error loading connection module: " + err);
+      IMPERIUM_LOG("❌ Error loading connection module: " + err);
     }
   }
 
