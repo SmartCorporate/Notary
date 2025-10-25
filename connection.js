@@ -1,4 +1,4 @@
-// --- IMPERIUM NOTARY - Leather Wallet Direct API Connection ---
+// --- IMPERIUM NOTARY - Leather Wallet Direct API Connection (v0.2) ---
 window.IMPERIUM_Connection = {};
 
 (function () {
@@ -45,13 +45,16 @@ window.IMPERIUM_Connection = {};
 
       log("Requesting addresses from Leather Wallet...");
       const provider = window.LeatherProvider || window.LeatherWallet;
-
-      // Request account info
       const response = await provider.request("getAddresses");
-      if (response && response.result && response.result.addresses && response.result.addresses.length > 0) {
-        connectedAddress = response.result.addresses[0].address;
-        setStatus(true, connectedAddress);
-        log(`Connected to wallet: ${connectedAddress}`);
+
+      if (response?.result?.addresses?.length > 0) {
+        // Cerca indirizzo STX (Stacks)
+        const stacksAddr = response.result.addresses.find(a => a.type === "stacks");
+        const addr = stacksAddr ? stacksAddr.address : response.result.addresses[0].address;
+
+        connectedAddress = addr;
+        setStatus(true, addr);
+        log(`Connected to wallet (type: ${stacksAddr ? "Stacks" : "Bitcoin"}): ${addr}`);
       } else {
         log("No address returned from wallet.");
       }
@@ -75,6 +78,10 @@ window.IMPERIUM_Connection = {};
 
     connectBtn.addEventListener("click", connectWallet);
     disconnectBtn.addEventListener("click", disconnectWallet);
+
+    // 🔹 Rimuovi debug box superiore (visivo)
+    const debugTop = document.querySelector(".debug-top");
+    if (debugTop) debugTop.style.display = "none";
 
     if (window.LeatherProvider || window.LeatherWallet) {
       log("✅ Leather Wallet extension detected and ready.");
