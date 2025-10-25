@@ -1,133 +1,93 @@
-import { showConnect, UserSession, AppConfig } from "https://cdn.jsdelivr.net/npm/@stacks/connect@latest/dist/connect.esm.js";
+import {
+  AppConfig,
+  UserSession,
+  showConnect,
+} from "https://cdn.jsdelivr.net/npm/@stacks/connect@7.2.0/dist/index.esm.js";
 
-// === CONFIG ===
-const params = { fee: 15.0, maxChars: 500 };
-const appName = "Imperium Notary";
-const appIcon = "https://www.bitcoinconsultingusa.com/favicon.ico";
+const statusDot = document.getElementById("wallet-status");
+const walletText = document.getElementById("wallet-text");
+const connectBtn = document.getElementById("connect-btn");
+const disconnectBtn = document.getElementById("disconnect-btn");
+const debugBox = document.getElementById("debug");
+const logBox = document.getElementById("log");
 
-// === DOM ELEMENTS ===
-const semaforo = document.getElementById("semaforo");
-const walletAddrField = document.getElementById("walletAddr");
-const connectBtn = document.getElementById("connectBtn");
-const debugMini = document.getElementById("debugMini");
-const debugLog = document.getElementById("debugLog");
-const messageInput = document.getElementById("message");
-const btnNotarize = document.getElementById("btn-notarize");
-const btnVerify = document.getElementById("btn-verify");
-const feeDisplay = document.getElementById("fee");
-const popup = document.getElementById("popup");
-const popupText = document.getElementById("popup-text");
-const btnClose = document.getElementById("btn-close");
-
-feeDisplay.innerText = params.fee.toFixed(2);
-
-// === STACKS CONFIGURATION ===
-const appConfig = new AppConfig(["store_write", "publish_data"]);
+const appConfig = new AppConfig(["store_write"]);
 const userSession = new UserSession({ appConfig });
-let connectedAddress = null;
 
-// === UI HELPERS ===
-function logDebug(msg) {
-  const time = new Date().toLocaleTimeString();
-  debugLog.textContent = `[${time}] ${msg}\n` + debugLog.textContent;
-  debugMini.textContent = `Debug: ${msg}`;
+const appDetails = {
+  name: "Imperium Notary",
+  icon: "https://www.bitcoinconsultingusa.com/favicon.ico",
+};
+
+function log(msg) {
+  console.log(msg);
+  logBox.textContent += `\n${msg}`;
+  logBox.scrollTop = logBox.scrollHeight;
 }
 
-function setConnected(address) {
-  connectedAddress = address;
-  if (address) {
-    semaforo.classList.remove("red", "yellow");
-    semaforo.classList.add("green");
-    walletAddrField.value = address;
-    connectBtn.textContent = "Disconnect";
-    logDebug(`Connected wallet: ${address}`);
+function setStatus(connected, address = "") {
+  if (connected) {
+    statusDot.classList.remove("red");
+    statusDot.classList.add("green");
+    walletText.textContent = `Wallet: ${address}`;
+    connectBtn.classList.add("hidden");
+    disconnectBtn.classList.remove("hidden");
   } else {
-    semaforo.classList.remove("green", "yellow");
-    semaforo.classList.add("red");
-    walletAddrField.value = "Wallet: disconnected";
-    connectBtn.textContent = "Connect Wallet";
-    logDebug("Disconnected wallet");
+    statusDot.classList.remove("green");
+    statusDot.classList.add("red");
+    walletText.textContent = "Wallet: disconnected";
+    connectBtn.classList.remove("hidden");
+    disconnectBtn.classList.add("hidden");
   }
 }
 
-function showPopup(text) {
-  popupText.innerHTML = text;
-  popup.style.display = "flex";
+function connectWallet() {
+  debugBox.textContent = "Debug: opening wallet...";
+  log("🟠 Opening Leather wallet popup...");
+
+  showConnect({
+    appDetails,
+    onFinish: () => {
+      const data = userSession.loadUserData();
+      const addr = data.profile?.stxAddress?.mainnet || "Unknown";
+      setStatus(true, addr);
+      debugBox.textContent = "Debug: wallet connected";
+      log(`✅ Wallet connected: ${addr}`);
+    },
+    onCancel: () => {
+      debugBox.textContent = "Debug: connection canceled";
+      log("❌ Wallet connection canceled");
+    },
+    userSession,
+  });
 }
-btnClose.onclick = () => (popup.style.display = "none");
 
-// === CONNECT/DISCONNECT ===
-async function toggleConnect() {
-  if (!connectedAddress) {
-    if (!window.StacksProvider) {
-      showPopup("⚠️ Please install <b>Leather Wallet</b> extension first.");
-      logDebug("Leather Wallet not detected.");
-      return;
-    }
-
-    semaforo.classList.remove("red");
-    semaforo.classList.add("yellow");
-    logDebug("Opening Leather connect popup...");
-
-    showConnect({
-      appDetails: {
-        name: appName,
-        icon: appIcon,
-      },
-      userSession,
-      onFinish: () => {
-        const userData = userSession.loadUserData();
-        const addr = userData.profile.stxAddress.mainnet;
-        setConnected(addr);
-        showPopup(`✅ Connected to Leather Wallet<br><b>${addr}</b>`);
-      },
-      onCancel: () => {
-        semaforo.classList.remove("yellow");
-        semaforo.classList.add("red");
-        logDebug("Connection canceled by user.");
-      },
-    });
-  } else {
+function disconnectWallet() {
+  if (userSession.isUserSignedIn()) {
     userSession.signUserOut();
-    setConnected(null);
-    showPopup("⚠️ Wallet disconnected");
+    setStatus(false);
+    debugBox.textContent = "Debug: disconnected";
+    log("🔴 Wallet disconnected");
   }
 }
 
-connectBtn.onclick = toggleConnect;
-
-// === NOTARIZE DEMO ===
-btnNotarize.onclick = () => {
-  if (!connectedAddress) {
-    showPopup("⚠️ Connect wallet first.");
-    logDebug("Notarize attempted without wallet.");
-    return;
-  }
-
-  const msg = messageInput.value.trim();
-  if (!msg) return showPopup("⚠️ Enter a message first.");
-
-  logDebug("Simulating notarization with connected wallet...");
-  showPopup("⛓ Building transaction payload...");
-
-  setTimeout(() => {
-    const txid = btoa(msg + Date.now()).slice(0, 12);
-    showPopup(`✅ Simulated notarization complete<br>TXID: ${txid}`);
-    logDebug(`TX simulated: ${txid}`);
-  }, 1500);
-};
-
-// === VERIFY STUB ===
-btnVerify.onclick = () => {
-  showPopup("🔍 Verification feature coming soon.");
-  logDebug("Verify button clicked.");
-};
-
-// === AUTOLOAD SESSION ===
-if (userSession.isUserSignedIn()) {
-  const userData = userSession.loadUserData();
-  setConnected(userData.profile.stxAddress.mainnet);
-  logDebug("Session restored from previous login.");
+// Initialize
+if (userSession.isSignInPending()) {
+  debugBox.textContent = "Debug: completing pending sign-in...";
+  userSession.handlePendingSignIn().then((userData) => {
+    const addr = userData.profile?.stxAddress?.mainnet;
+    setStatus(true, addr);
+    log(`✅ Signed in as: ${addr}`);
+  });
+} else if (userSession.isUserSignedIn()) {
+  const data = userSession.loadUserData();
+  const addr = data.profile?.stxAddress?.mainnet;
+  setStatus(true, addr);
+  log(`✅ Wallet already connected: ${addr}`);
 } else {
-  logDebug("Ready. Waiting for wallet connection.");
+  setStatus(false);
+  log("❌ Wallet not connected");
 }
+
+connectBtn.addEventListener("click", connectWallet);
+disconnectBtn.addEventListener("click", disconnectWallet);
