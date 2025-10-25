@@ -1,37 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>IMPERIUM NOTARY</title>
-  <!-- same folder reference -->
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <!-- TOP BAR: wallet control -->
+  <div class="topbar">
+    <div class="wallet-control">
+      <span id="semaforo" class="semaforo red"></span>
+      <input id="walletAddr" class="wallet-addr" placeholder="Wallet: disconnected" readonly />
+      <button id="connectBtn">Connect Wallet</button>
+    </div>
+    <div class="debug-mini" id="debugMini">Debug: idle</div>
+  </div>
+
   <div class="terminal-container">
     <div class="terminal-box">
       <h1 class="title">IMPERIUM NOTARY</h1>
       <p class="subtitle">⚠️ Under Development — Secured by Bitcoin Blockchain</p>
-
       <p class="description">
         Record your message on the <b>Stacks blockchain</b>, permanently anchored to <b>Bitcoin’s immutability</b>.
       </p>
-
-      <textarea id="message" maxlength="500"
-        placeholder="Type your message here (max 500 characters)..."></textarea>
-
+      <textarea id="message" maxlength="500" placeholder="Type your message (max 500 characters)..."></textarea>
       <div class="info-line">
         💰 <b>Current Fee:</b> <span id="fee">5.00</span> USD
       </div>
-
       <div class="button-group">
         <button id="btn-notarize">⛓ Notarize</button>
         <button id="btn-verify">🔍 Verify by ID</button>
       </div>
+      <div class="debug-area">
+        <div class="debug-title">Event Log / Debug</div>
+        <pre id="debugLog" class="debugLog"></pre>
+      </div>
     </div>
   </div>
 
-  <!-- POPUP -->
   <div id="popup">
     <div class="popup-content">
       <div id="popup-text">Processing...</div>
@@ -39,7 +46,6 @@
     </div>
   </div>
 
-  <!-- same folder reference -->
   <script src="main.js"></script>
 </body>
 </html>
