@@ -1,6 +1,6 @@
 // Configuration (can be dynamic later)
 let params = {
-  fee: 5.0,
+  fee: 15.0,
   maxChars: 500
 };
 
