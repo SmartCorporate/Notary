@@ -1,11 +1,21 @@
-// main.js — global logger
+// --- IMPERIUM NOTARY MAIN SCRIPT v0.1 ---
 window.IMPERIUM_LOG = function (msg) {
   const logBox = document.getElementById("event-log");
   if (logBox) {
-    const now = new Date();
-    const timestamp = now.toLocaleTimeString();
+    const timestamp = new Date().toLocaleTimeString();
     logBox.textContent += `\n[${timestamp}] ${msg}`;
     logBox.scrollTop = logBox.scrollHeight;
   }
-  console.log(msg);
 };
+
+function initImperium() {
+  IMPERIUM_LOG("🚀 Starting Imperium Notary v0.1.0");
+  IMPERIUM_LOG("System initialized successfully.");
+  if (window.IMPERIUM_Connection && window.IMPERIUM_Connection.init) {
+    window.IMPERIUM_Connection.init();
+  } else {
+    IMPERIUM_LOG("⚠️ Connection module missing or failed to load.");
+  }
+}
+
+window.addEventListener("load", initImperium);

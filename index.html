@@ -5,9 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>IMPERIUM NOTARY</title>
 
+  <!-- Stile principale -->
   <link rel="stylesheet" href="style.css" />
 
-  <!-- Stacks Libraries -->
+  <!-- Librerie Stacks.js necessarie per le transazioni STX -->
   <script src="https://cdn.jsdelivr.net/npm/@stacks/transactions/dist/transactions.umd.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@stacks/network/dist/network.umd.js"></script>
 </head>
@@ -15,7 +16,7 @@
 <body>
   <div id="app">
 
-    <!-- 🔹 Wallet Connection Panel -->
+    <!-- 🔹 Pannello connessione wallet -->
     <div id="wallet-panel" class="card">
       <div class="wallet-header">
         <span id="wallet-status" class="led red"></span>
@@ -25,7 +26,7 @@
       </div>
     </div>
 
-    <!-- 🔹 Main Card -->
+    <!-- 🔹 Card principale -->
     <div id="main-card" class="card">
       <h1>IMPERIUM NOTARY</h1>
       <p class="subtext">⚠️ Under Development — Secured by Bitcoin Blockchain</p>
@@ -50,27 +51,43 @@
         <pre id="event-log">Event Log / Debug</pre>
       </div>
     </div>
+
   </div>
 
-  <!-- 🔹 Script Core -->
+  <!-- 🔹 Script principali -->
   <script src="main.js"></script>
   <script src="connection.js"></script>
+
+  <!-- 🔹 File parametri globali -->
   <script src="param.js"></script>
+
+  <!-- 🔹 Modulo pagamento STX -->
   <script src="payfee.js"></script>
 
-  <!-- 🔹 Initialization -->
+  <!-- 🔹 Inizializzazione -->
   <script>
     window.addEventListener("load", () => {
-      console.log("📦 Initializing IMPERIUM...");
       if (window.IMPERIUM_PayFee && window.IMPERIUM_PayFee.init) {
         window.IMPERIUM_PayFee.init();
 
+        // Aggiorna la fee mostrata nell’interfaccia
         const feeDisplay = document.getElementById("fee-amount");
-        if (window.IMPERIUM_Params && feeDisplay) {
-          feeDisplay.textContent = `${window.IMPERIUM_Params.feeAmount.toFixed(2)} STX`;
+        if (window.IMPERIUM_PARAM && feeDisplay) {
+          feeDisplay.textContent = `${window.IMPERIUM_PARAM.feeSTX.toFixed(2)} STX`;
         }
       }
     });
   </script>
+  <script>
+  document.addEventListener("DOMContentLoaded", () => {
+    console.log("📦 Forcing payfee init...");
+    if (window.IMPERIUM_PayFee && window.IMPERIUM_PayFee.init) {
+      window.IMPERIUM_PayFee.init();
+    } else {
+      console.log("❌ payfee.js not loaded or init() missing.");
+    }
+  });
+</script>
+
 </body>
 </html>
