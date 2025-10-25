@@ -1,8 +1,8 @@
-// payfee.js — STX transfer module (Testnet-ready)
+// payfee.js — STX transfer module
 window.IMPERIUM_PayFee = {};
 
 (function () {
-  const { StacksTestnet, StacksMainnet, makeSTXTokenTransfer, broadcastTransaction, standardPrincipalCV } = window;
+  const { StacksTestnet, makeSTXTokenTransfer, broadcastTransaction } = window;
 
   async function sendFee() {
     const params = window.IMPERIUM_Params || {};
@@ -11,13 +11,21 @@ window.IMPERIUM_PayFee = {};
 
     window.IMPERIUM_LOG(`💰 Preparing transfer of ${feeSTX} STX to ${recipient}`);
 
-    try {
-      if (!window.STXAddress || window.STXAddress === "") {
-        alert("⚠️ No STX address detected. Connect your wallet first.");
-        return;
-      }
+    // Read connected address
+    let senderAddress = window.STXAddress;
+    if (!senderAddress) {
+      const walletText = document.getElementById("wallet-text")?.textContent || "";
+      const match = walletText.match(/(ST[A-Z0-9]+)/);
+      senderAddress = match ? match[1] : null;
+    }
 
-      // For now, we always use testnet
+    if (!senderAddress) {
+      alert("⚠️ No STX address detected. Connect your wallet first.");
+      window.IMPERIUM_LOG("⚠️ No STX address found — check connection.js global export.");
+      return;
+    }
+
+    try {
       const network = new StacksTestnet();
       const amountMicroSTX = Math.floor(feeSTX * 1_000_000);
 
@@ -26,19 +34,19 @@ window.IMPERIUM_PayFee = {};
         amount: amountMicroSTX,
         network,
         memo: "Imperium Notary Fee",
-        anchorMode: 3,
+        anchorMode: 3
       };
 
       window.IMPERIUM_LOG("🧾 Requesting Leather Wallet signature...");
 
-      // Try to call the wallet provider
-      if (!window.LeatherProvider || !window.LeatherProvider.request) {
-        alert("⚠️ Leather provider not available. Ensure Leather Wallet is unlocked and connected.");
+      const provider = window.LeatherProvider || window.btc;
+      if (!provider || !provider.request) {
+        alert("⚠️ Leather provider not available. Ensure it's unlocked and connected.");
         window.IMPERIUM_LOG("⚠️ Leather provider not available.");
         return;
       }
 
-      const response = await window.LeatherProvider.request("stx_transfer", txOptions);
+      const response = await provider.request("stx_transfer", txOptions);
 
       if (response && response.txId) {
         const explorerUrl = `https://explorer.stacks.co/txid/${response.txId}?chain=testnet`;
