@@ -96,15 +96,8 @@ textarea {
   vertical-align: middle;
   box-shadow: 0 0 6px #000;
 }
-.led.gray { background-color: #444; }
 .led.red { background-color: #900; box-shadow: 0 0 8px #f00; }
 .led.green { background-color: #0f0; box-shadow: 0 0 8px #0f0; }
-
-.label {
-  color: #ffa500;
-  margin-right: 12px;
-  font-size: 0.9em;
-}
 
 /* Log box */
 #log-box {
@@ -122,9 +115,4 @@ pre {
   font-size: 0.85em;
   line-height: 1.4em;
   margin: 0;
-}
-
-#network-status {
-  margin-top: 10px;
-  margin-bottom: 10px;
 }

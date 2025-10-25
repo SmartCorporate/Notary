@@ -1,28 +1,26 @@
-// --- IMPERIUM NOTARY - Leather Wallet Direct API Connection (v0.2) ---
+// --- IMPERIUM NOTARY - Leather Wallet Connection (Stable) ---
 window.IMPERIUM_Connection = {};
 
 (function () {
-  const { appName, appIcon } = window.IMPERIUM_CONFIG;
-
   const statusDot = document.getElementById("wallet-status");
   const walletText = document.getElementById("wallet-text");
   const connectBtn = document.getElementById("connect-btn");
   const disconnectBtn = document.getElementById("disconnect-btn");
-  const debugBox = document.getElementById("debug");
 
-  let connectedAddress = null;
+  let connectedBTC = null;
 
-  // --- Utility logging ---
   function log(msg) {
     window.IMPERIUM_LOG(msg);
-    if (debugBox) debugBox.textContent = "Debug: " + msg;
   }
 
-  function setStatus(connected, address = "") {
+  function setStatus(connected, btc = "") {
     if (connected) {
       statusDot.classList.remove("red");
       statusDot.classList.add("green");
-      walletText.textContent = `Wallet: ${address}`;
+
+      walletText.textContent = btc
+        ? `Connected to wallet: ${btc}`
+        : "Wallet connected (no address returned)";
       connectBtn.classList.add("hidden");
       disconnectBtn.classList.remove("hidden");
     } else {
@@ -34,29 +32,46 @@ window.IMPERIUM_Connection = {};
     }
   }
 
-  // --- Connect Wallet using Leather API ---
+  async function tryLeatherMethods(provider) {
+    let response = null;
+
+    try {
+      response = await provider.request("getAddresses");
+      if (response?.result?.addresses?.length > 0) return response;
+    } catch {}
+
+    try {
+      response = await provider.request("stx_getAddresses");
+      if (response?.result?.addresses?.length > 0) return response;
+    } catch {}
+
+    throw new Error("No usable address source from Leather Wallet");
+  }
+
   async function connectWallet() {
     try {
-      if (!window.LeatherProvider && !window.LeatherWallet) {
-        log("Leather wallet extension not detected.");
-        alert("Please install the Leather Wallet browser extension and reload the page.");
+      const provider = window.LeatherProvider || window.LeatherWallet;
+      if (!provider) {
+        alert("Please install the Leather Wallet extension and reload the page.");
+        log("Leather wallet not detected.");
         return;
       }
 
       log("Requesting addresses from Leather Wallet...");
-      const provider = window.LeatherProvider || window.LeatherWallet;
-      const response = await provider.request("getAddresses");
+      const response = await tryLeatherMethods(provider);
 
       if (response?.result?.addresses?.length > 0) {
-        // Cerca indirizzo STX (Stacks)
-        const stacksAddr = response.result.addresses.find(a => a.type === "stacks");
-        const addr = stacksAddr ? stacksAddr.address : response.result.addresses[0].address;
+        const btc = response.result.addresses.find(
+          a => a.type === "bitcoin" || a.purpose === "payment"
+        );
 
-        connectedAddress = addr;
-        setStatus(true, addr);
-        log(`Connected to wallet (type: ${stacksAddr ? "Stacks" : "Bitcoin"}): ${addr}`);
+        connectedBTC = btc ? btc.address : null;
+        setStatus(true, connectedBTC);
+
+        log("Connected successfully.");
+        if (connectedBTC) log(`BTC address: ${connectedBTC}`);
       } else {
-        log("No address returned from wallet.");
+        log("⚠️ No usable addresses returned from Leather.");
       }
     } catch (err) {
       log("Connection failed: " + err.message);
@@ -64,24 +79,18 @@ window.IMPERIUM_Connection = {};
     }
   }
 
-  // --- Disconnect Wallet (local only) ---
   function disconnectWallet() {
-    connectedAddress = null;
+    connectedBTC = null;
     setStatus(false);
     log("Wallet disconnected manually.");
   }
 
-  // --- Initialization ---
   function init() {
     log("Initializing Leather Wallet connection...");
     setStatus(false);
 
     connectBtn.addEventListener("click", connectWallet);
     disconnectBtn.addEventListener("click", disconnectWallet);
-
-    // 🔹 Rimuovi debug box superiore (visivo)
-    const debugTop = document.querySelector(".debug-top");
-    if (debugTop) debugTop.style.display = "none";
 
     if (window.LeatherProvider || window.LeatherWallet) {
       log("✅ Leather Wallet extension detected and ready.");
