@@ -1,4 +1,4 @@
-// --- IMPERIUM NOTARY - MODULE: connection.js ---
+// --- IMPERIUM NOTARY - MODULE: connection.js con check wallet installed ---
 
 window.IMPERIUM_Connection = {};
 
@@ -13,26 +13,21 @@ window.IMPERIUM_Connection = {};
 
   let userSession = null;
 
-  // ✅ CDN principale + fallback
   const STACKS_CDN_PRIMARY = "https://cdn.jsdelivr.net/npm/@stacks/connect@7.4.0/dist/connect.umd.min.js";
   const STACKS_CDN_BACKUP = "https://unpkg.com/@stacks/connect@7.4.0/dist/connect.umd.js";
 
-  // --- Carica dinamicamente la libreria Stacks ---
   async function loadStacksScript() {
     return new Promise((resolve, reject) => {
       if (window.StacksConnect) return resolve("already loaded");
-
       const script = document.createElement("script");
       script.src = STACKS_CDN_PRIMARY;
       script.async = true;
-
       script.onload = () => {
         if (window.StacksConnect) {
           IMPERIUM_LOG("✅ Loaded StacksConnect from jsDelivr");
           resolve("primary");
         } else reject("StacksConnect missing after primary load");
       };
-
       script.onerror = () => {
         IMPERIUM_LOG("⚠️ Primary CDN failed, trying backup...");
         const backup = document.createElement("script");
@@ -47,12 +42,10 @@ window.IMPERIUM_Connection = {};
         backup.onerror = () => reject("Both CDN sources failed");
         document.head.appendChild(backup);
       };
-
       document.head.appendChild(script);
     });
   }
 
-  // --- UI helper ---
   function setStatus(connected, address = "") {
     if (connected) {
       statusDot.classList.remove("red");
@@ -69,8 +62,13 @@ window.IMPERIUM_Connection = {};
     }
   }
 
-  // --- Connect wallet ---
   function connectWallet() {
+    if (!window.StacksConnect) {
+      debugBox.textContent = "Debug: wallet extension not detected";
+      IMPERIUM_LOG("⚠️ Wallet extension not installed or library not loaded.");
+      alert("Please install Leather Wallet (or other Stacks wallet) to connect.");
+      return;
+    }
     const { showConnect, AppConfig, UserSession } = window.StacksConnect;
     const appConfig = new AppConfig(["store_write"]);
     userSession = new UserSession({ appConfig });
@@ -95,7 +93,6 @@ window.IMPERIUM_Connection = {};
     });
   }
 
-  // --- Disconnect wallet ---
   function disconnectWallet() {
     if (userSession?.isUserSignedIn()) {
       userSession.signUserOut();
@@ -105,11 +102,9 @@ window.IMPERIUM_Connection = {};
     }
   }
 
-  // --- Init function ---
   async function init() {
     try {
       await loadStacksScript();
-
       const { AppConfig, UserSession } = window.StacksConnect;
       const appConfig = new AppConfig(["store_write"]);
       userSession = new UserSession({ appConfig });
@@ -139,6 +134,5 @@ window.IMPERIUM_Connection = {};
     }
   }
 
-  // Esporta nel namespace globale
   window.IMPERIUM_Connection.init = init;
 })();
