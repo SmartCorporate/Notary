@@ -1,4 +1,4 @@
-// --- IMPERIUM NOTARY - Leather Wallet Connection (Stable) ---
+// --- IMPERIUM NOTARY - Leather Wallet Connection (Functional Build) ---
 window.IMPERIUM_Connection = {};
 
 (function () {
@@ -18,9 +18,12 @@ window.IMPERIUM_Connection = {};
       statusDot.classList.remove("red");
       statusDot.classList.add("green");
 
-      walletText.textContent = btc
-        ? `Connected to wallet: ${btc}`
-        : "Wallet connected (no address returned)";
+      if (btc) {
+        walletText.textContent = `Connected to wallet: ${btc}`;
+      } else {
+        walletText.textContent = "Wallet connected (no address returned)";
+      }
+
       connectBtn.classList.add("hidden");
       disconnectBtn.classList.remove("hidden");
     } else {
@@ -32,49 +35,64 @@ window.IMPERIUM_Connection = {};
     }
   }
 
-  async function tryLeatherMethods(provider) {
-    let response = null;
-
-    try {
-      response = await provider.request("getAddresses");
-      if (response?.result?.addresses?.length > 0) return response;
-    } catch {}
-
-    try {
-      response = await provider.request("stx_getAddresses");
-      if (response?.result?.addresses?.length > 0) return response;
-    } catch {}
-
-    throw new Error("No usable address source from Leather Wallet");
-  }
-
   async function connectWallet() {
     try {
       const provider = window.LeatherProvider || window.LeatherWallet;
       if (!provider) {
         alert("Please install the Leather Wallet extension and reload the page.");
-        log("Leather wallet not detected.");
+        log("❌ Leather Wallet not detected.");
         return;
       }
 
-      log("Requesting addresses from Leather Wallet...");
-      const response = await tryLeatherMethods(provider);
+      log("🔄 Initializing Leather Wallet connection...");
 
-      if (response?.result?.addresses?.length > 0) {
-        const btc = response.result.addresses.find(
-          a => a.type === "bitcoin" || a.purpose === "payment"
-        );
+      // Try multiple known methods to fetch BTC address
+      let response = null;
 
-        connectedBTC = btc ? btc.address : null;
-        setStatus(true, connectedBTC);
+      try {
+        response = await provider.request("getAddresses");
+      } catch (err) {
+        log("Primary method failed, trying backup...");
+      }
 
-        log("Connected successfully.");
-        if (connectedBTC) log(`BTC address: ${connectedBTC}`);
-      } else {
+      if (!response || !response.result || !response.result.addresses) {
+        try {
+          response = await provider.request("wallet_getAddresses");
+        } catch (err) {
+          log("Backup method failed, trying secondary fallback...");
+        }
+      }
+
+      if (!response || !response.result || !response.result.addresses) {
+        try {
+          response = await provider.request("stx_getAddresses");
+        } catch (err) {
+          log("Fallback to stx_getAddresses also failed.");
+        }
+      }
+
+      if (!response || !response.result || !response.result.addresses) {
         log("⚠️ No usable addresses returned from Leather.");
+        setStatus(true);
+        return;
+      }
+
+      const btcAddr = response.result.addresses.find(
+        (a) => a.type === "bitcoin" || a.purpose === "payment" || a.symbol === "BTC"
+      );
+
+      if (btcAddr && btcAddr.address) {
+        connectedBTC = btcAddr.address;
+        setStatus(true, connectedBTC);
+        log("✅ Leather Wallet connected successfully.");
+        log(`BTC address: ${connectedBTC}`);
+      } else {
+        setStatus(true);
+        log("⚠️ Connected, but no Bitcoin address returned.");
       }
     } catch (err) {
-      log("Connection failed: " + err.message);
+      setStatus(false);
+      log("❌ Connection failed: " + err.message);
       alert("Connection failed: " + err.message);
     }
   }
@@ -82,11 +100,11 @@ window.IMPERIUM_Connection = {};
   function disconnectWallet() {
     connectedBTC = null;
     setStatus(false);
-    log("Wallet disconnected manually.");
+    log("🔌 Wallet disconnected manually.");
   }
 
   function init() {
-    log("Initializing Leather Wallet connection...");
+    log("🟠 Starting Leather Wallet connection module...");
     setStatus(false);
 
     connectBtn.addEventListener("click", connectWallet);
