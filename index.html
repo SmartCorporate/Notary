@@ -78,5 +78,16 @@
       }
     });
   </script>
+  <script>
+  document.addEventListener("DOMContentLoaded", () => {
+    console.log("📦 Forcing payfee init...");
+    if (window.IMPERIUM_PayFee && window.IMPERIUM_PayFee.init) {
+      window.IMPERIUM_PayFee.init();
+    } else {
+      console.log("❌ payfee.js not loaded or init() missing.");
+    }
+  });
+</script>
+
 </body>
 </html>
