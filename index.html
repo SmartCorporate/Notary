@@ -3,29 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>IMPERIUM NOTARY v2</title>
+  <title>IMPERIUM NOTARY</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <div id="container">
-    <header>
-      <h1>IMPERIUM NOTARY</h1>
-      <p class="subtitle">⚠️ Under Development – Secured by Bitcoin Blockchain</p>
-    </header>
+  <div class="terminal-container">
+    <div class="terminal-box">
+      <h1 class="title">IMPERIUM NOTARY</h1>
+      <p class="subtitle">⚠️ Under Development — Secured by Bitcoin Blockchain</p>
 
-    <section class="notary-box">
-      <div class="description">
-        This system records your message on the <b>Stacks blockchain</b>, anchored to <b>Bitcoin’s immutability</b>.
+      <p class="description">
+        Record your message on the <b>Stacks blockchain</b>, permanently anchored to <b>Bitcoin’s immutability</b>.
+      </p>
+
+      <textarea id="message" maxlength="500"
+        placeholder="Type your message here (max 500 characters)..."></textarea>
+
+      <div class="info-line">
+        💰 <b>Current Fee:</b> <span id="fee">5.00</span> USD
       </div>
 
-      <textarea id="message" maxlength="500" placeholder="Type your message (max 500 characters)..."></textarea>
-      <div class="info-line">💰 Current Fee: <span id="fee">5</span>$</div>
-
-      <div class="button-bar">
-        <button id="btn-notarize">Notarize</button>
-        <button id="btn-verify">Verify by ID</button>
+      <div class="button-group">
+        <button id="btn-notarize">⛓ Notarize</button>
+        <button id="btn-verify">🔍 Verify by ID</button>
       </div>
-    </section>
+    </div>
   </div>
 
   <!-- POPUP -->

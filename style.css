@@ -1,111 +1,119 @@
-/* ==== GLOBAL SETTINGS ==== */
-body {
+/* ===== GENERAL ===== */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+
+html, body {
+  height: 100%;
   margin: 0;
-  height: 100vh;
-  background: radial-gradient(circle at center, #0d0d0d 0%, #000000 100%);
+  background: radial-gradient(circle at center, #0b0b0b 0%, #000000 100%);
   color: #f1f1f1;
-  font-family: 'Orbitron', 'Segoe UI', monospace;
+  font-family: 'Orbitron', sans-serif;
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
+  overflow: hidden;
 }
 
-#container {
+/* ===== TERMINAL CONTAINER ===== */
+.terminal-container {
+  width: 100%;
+  max-width: 700px;
+  padding: 1.5rem;
+  box-sizing: border-box;
+}
+
+.terminal-box {
+  background: rgba(20, 20, 20, 0.9);
+  border: 1px solid #ff7a00;
+  border-radius: 15px;
+  box-shadow: 0 0 25px rgba(255, 122, 0, 0.3);
+  padding: 2rem;
   text-align: center;
-  width: 90%;
-  max-width: 650px;
-  animation: fadeIn 1s ease-in;
+  animation: fadeIn 0.8s ease-in;
 }
 
-/* ==== HEADER ==== */
-h1 {
+/* ===== TEXT ELEMENTS ===== */
+.title {
   color: #ff7a00;
   font-size: 2.2rem;
+  margin: 0 0 0.3rem 0;
   letter-spacing: 2px;
-  margin-bottom: 0.2rem;
 }
 
 .subtitle {
-  color: #aaa;
+  color: #ccc;
   font-size: 0.9rem;
-  margin-bottom: 1.8rem;
-}
-
-/* ==== NOTARY BOX ==== */
-.notary-box {
-  background: rgba(20, 20, 20, 0.85);
-  border: 1px solid #333;
-  border-radius: 16px;
-  padding: 2rem;
-  box-shadow: 0 0 30px rgba(255, 122, 0, 0.3);
-  transition: 0.4s ease;
-}
-
-.notary-box:hover {
-  box-shadow: 0 0 50px rgba(255, 122, 0, 0.5);
+  margin-bottom: 1.5rem;
 }
 
 .description {
   color: #ffb347;
   font-size: 1rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.2rem;
+  line-height: 1.5rem;
 }
 
+/* ===== TEXTAREA ===== */
 textarea {
   width: 100%;
-  height: 120px;
-  border-radius: 10px;
-  border: none;
-  background-color: #111;
+  height: 140px;
+  background-color: #0f0f0f;
+  border: 1px solid #444;
   color: #fff;
+  border-radius: 10px;
   padding: 1rem;
+  font-size: 0.95rem;
   resize: none;
-  font-size: 1rem;
+  box-shadow: inset 0 0 12px rgba(255, 122, 0, 0.25);
   outline: none;
-  box-shadow: inset 0 0 8px rgba(255, 122, 0, 0.3);
+  transition: 0.3s ease;
 }
 
+textarea:focus {
+  border-color: #ff7a00;
+  box-shadow: 0 0 15px rgba(255, 122, 0, 0.4);
+}
+
+/* ===== INFO LINE ===== */
 .info-line {
-  font-size: 0.85rem;
+  margin-top: 0.7rem;
+  font-size: 0.9rem;
   color: #bbb;
-  margin-top: 0.5rem;
 }
 
-/* ==== BUTTONS ==== */
-.button-bar {
+/* ===== BUTTONS ===== */
+.button-group {
   display: flex;
   justify-content: space-around;
-  margin-top: 1.4rem;
+  margin-top: 1.5rem;
 }
 
 button {
   border: none;
-  border-radius: 10px;
-  padding: 0.8rem 1.5rem;
+  border-radius: 8px;
+  padding: 0.8rem 1.6rem;
   font-weight: bold;
-  font-size: 1rem;
   background: linear-gradient(90deg, #ff7a00, #ffb347);
   color: #0a0a0a;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: all 0.25s ease;
+  font-family: 'Orbitron', sans-serif;
 }
 
 button:hover {
-  transform: scale(1.08);
-  box-shadow: 0 0 20px rgba(255, 122, 0, 0.7);
+  transform: scale(1.1);
+  box-shadow: 0 0 25px rgba(255, 122, 0, 0.6);
 }
 
-/* ==== POPUP ==== */
+/* ===== POPUP ===== */
 #popup {
   display: none;
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0,0,0,0.8);
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0, 0, 0, 0.85);
   justify-content: center;
   align-items: center;
+  z-index: 100;
 }
 
 .popup-content {
@@ -114,31 +122,16 @@ button:hover {
   border-radius: 12px;
   padding: 2rem;
   text-align: center;
+  color: #ffb347;
   width: 80%;
   max-width: 400px;
-  box-shadow: 0 0 30px rgba(255,122,0,0.4);
+  box-shadow: 0 0 30px rgba(255, 122, 0, 0.4);
   animation: popupIn 0.5s ease-out;
 }
 
-#popup-text {
-  font-size: 1rem;
-  color: #ffb347;
-}
-
-#btn-close {
-  margin-top: 1.5rem;
-  background-color: #ff7a00;
-  color: #0a0a0a;
-  border: none;
-  border-radius: 6px;
-  padding: 0.5rem 1.2rem;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-/* ==== ANIMATIONS ==== */
+/* ===== ANIMATIONS ===== */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px); }
+  from { opacity: 0; transform: translateY(15px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -147,9 +140,10 @@ button:hover {
   to { transform: scale(1); opacity: 1; }
 }
 
-/* ==== RESPONSIVE ==== */
-@media (max-width: 600px) {
-  h1 { font-size: 1.8rem; }
-  .notary-box { padding: 1.2rem; }
-  textarea { height: 100px; font-size: 0.9rem; }
+/* ===== RESPONSIVE ===== */
+@media (max-width: 700px) {
+  .title { font-size: 1.7rem; }
+  .terminal-box { padding: 1.2rem; }
+  textarea { height: 110px; font-size: 0.9rem; }
+  button { font-size: 0.9rem; padding: 0.6rem 1.2rem; }
 }
