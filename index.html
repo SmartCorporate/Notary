@@ -4,10 +4,19 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>IMPERIUM NOTARY</title>
+
+  <!-- Stile principale -->
   <link rel="stylesheet" href="style.css" />
+
+  <!-- Librerie Stacks.js necessarie per le transazioni STX -->
+  <script src="https://cdn.jsdelivr.net/npm/@stacks/transactions/dist/transactions.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@stacks/network/dist/network.umd.js"></script>
 </head>
+
 <body>
   <div id="app">
+
+    <!-- 🔹 Pannello connessione wallet -->
     <div id="wallet-panel" class="card">
       <div class="wallet-header">
         <span id="wallet-status" class="led red"></span>
@@ -17,32 +26,57 @@
       </div>
     </div>
 
+    <!-- 🔹 Card principale -->
     <div id="main-card" class="card">
       <h1>IMPERIUM NOTARY</h1>
       <p class="subtext">⚠️ Under Development — Secured by Bitcoin Blockchain</p>
       <p class="desc">
-        Record your message on the <b>Stacks blockchain</b>, permanently anchored to
-        <b>Bitcoin’s immutability</b>.
+        Record your message permanently on the <b>Stacks blockchain</b>,
+        anchored to <b>Bitcoin’s immutability</b>.
       </p>
 
       <textarea id="message" maxlength="500" placeholder="Type your message here (max 500 characters)..."></textarea>
 
       <div class="fee">
-        <span>💰 Current Fee: 15.00 USD</span>
+        <span>💰 Current Fee: <b id="fee-amount">5.00 STX</b></span>
       </div>
 
       <div class="button-row">
-        <button id="btn-notarize" class="btn">🧾 Notarize</button>
+        <button id="btn-notarize" class="btn">🧾 Notarize (Pay Fee)</button>
         <button id="btn-verify" class="btn">🔍 Verify by ID</button>
       </div>
 
+      <!-- 🔹 Event Log -->
       <div id="log-box">
         <pre id="event-log">Event Log / Debug</pre>
       </div>
     </div>
+
   </div>
 
+  <!-- 🔹 Script principali -->
   <script src="main.js"></script>
   <script src="connection.js"></script>
+
+  <!-- 🔹 File parametri globali -->
+  <script src="param.js"></script>
+
+  <!-- 🔹 Modulo pagamento STX -->
+  <script src="payfee.js"></script>
+
+  <!-- 🔹 Inizializzazione -->
+  <script>
+    window.addEventListener("load", () => {
+      if (window.IMPERIUM_PayFee && window.IMPERIUM_PayFee.init) {
+        window.IMPERIUM_PayFee.init();
+
+        // Aggiorna la fee mostrata nell’interfaccia
+        const feeDisplay = document.getElementById("fee-amount");
+        if (window.IMPERIUM_PARAM && feeDisplay) {
+          feeDisplay.textContent = `${window.IMPERIUM_PARAM.feeSTX.toFixed(2)} STX`;
+        }
+      }
+    });
+  </script>
 </body>
 </html>
