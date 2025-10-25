@@ -1,4 +1,4 @@
-// --- IMPERIUM NOTARY - Leather Wallet Direct API Connection (v0.4 clean) ---
+// --- IMPERIUM NOTARY - Leather Wallet Universal Connection (v0.6) ---
 window.IMPERIUM_Connection = {};
 
 (function () {
@@ -17,11 +17,23 @@ window.IMPERIUM_Connection = {};
     if (debugBox) debugBox.textContent = "Debug: " + msg;
   }
 
-  function setStatus(connected, displayAddr = "") {
+  function detectStacksNetwork(address) {
+    if (!address) return "unknown";
+    if (address.startsWith("SP")) return "mainnet";
+    if (address.startsWith("ST")) return "testnet";
+    return "unknown";
+  }
+
+  function setStatus(connected, displayAddr = "", network = "") {
     if (connected) {
       statusDot.classList.remove("red");
       statusDot.classList.add("green");
-      walletText.textContent = `Wallet: ${displayAddr}`;
+
+      let label = displayAddr;
+      if (network === "mainnet") label += " 🌐(mainnet)";
+      if (network === "testnet") label += " 🧪(testnet)";
+      walletText.textContent = `Wallet: ${label}`;
+
       connectBtn.classList.add("hidden");
       disconnectBtn.classList.remove("hidden");
     } else {
@@ -33,7 +45,44 @@ window.IMPERIUM_Connection = {};
     }
   }
 
-  // --- Connect Wallet using Leather API ---
+  // --- Try all possible Leather API methods ---
+  async function tryLeatherMethods(provider) {
+    let response = null;
+
+    // 1️⃣ Try the modern method first
+    try {
+      response = await provider.request("stx_getAddresses");
+      if (response?.result?.addresses?.length > 0) return response;
+      window.IMPERIUM_LOG("Method stx_getAddresses returned empty, fallback...");
+    } catch {}
+
+    // 2️⃣ Try legacy method
+    try {
+      response = await provider.request("getAddresses");
+      if (response?.result?.addresses?.length > 0) return response;
+      window.IMPERIUM_LOG("Method getAddresses returned empty, fallback...");
+    } catch {}
+
+    // 3️⃣ Try the oldest method (getAccounts)
+    try {
+      response = await provider.request("stx_getAccounts");
+      if (response?.result?.accounts?.length > 0) {
+        return {
+          result: {
+            addresses: response.result.accounts.map(acc => ({
+              address: acc.address,
+              type: "stacks",
+            })),
+          },
+        };
+      }
+      window.IMPERIUM_LOG("Method stx_getAccounts returned empty, fallback...");
+    } catch {}
+
+    throw new Error("No usable address source from Leather Wallet");
+  }
+
+  // --- Connect Wallet ---
   async function connectWallet() {
     try {
       const provider = window.LeatherProvider || window.LeatherWallet;
@@ -44,7 +93,7 @@ window.IMPERIUM_Connection = {};
       }
 
       log("Requesting addresses from Leather Wallet...");
-      const response = await provider.request("getAddresses");
+      const response = await tryLeatherMethods(provider);
 
       if (response?.result?.addresses?.length > 0) {
         const btc = response.result.addresses.find(
@@ -57,17 +106,19 @@ window.IMPERIUM_Connection = {};
         connectedBTC = btc ? btc.address : null;
         connectedSTX = stx ? stx.address : null;
 
+        const network = detectStacksNetwork(connectedSTX);
         const display = connectedSTX || connectedBTC || "unknown";
-        setStatus(true, display);
 
-        // Log dettagliato sotto
+        setStatus(true, display, network);
+
         log("Connected successfully.");
         if (connectedBTC) window.IMPERIUM_LOG(`BTC address: ${connectedBTC}`);
-        if (connectedSTX) window.IMPERIUM_LOG(`STX address: ${connectedSTX}`);
-        if (!connectedSTX && !connectedBTC)
-          window.IMPERIUM_LOG("⚠️ No usable addresses returned.");
+        if (connectedSTX)
+          window.IMPERIUM_LOG(
+            `STX address: ${connectedSTX} (${network.toUpperCase()})`
+          );
       } else {
-        log("No address returned from wallet.");
+        log("⚠️ No usable addresses returned from Leather.");
       }
     } catch (err) {
       log("Connection failed: " + err.message);
@@ -75,7 +126,7 @@ window.IMPERIUM_Connection = {};
     }
   }
 
-  // --- Disconnect Wallet (local only) ---
+  // --- Disconnect ---
   function disconnectWallet() {
     connectedBTC = null;
     connectedSTX = null;
@@ -91,7 +142,7 @@ window.IMPERIUM_Connection = {};
     connectBtn.addEventListener("click", connectWallet);
     disconnectBtn.addEventListener("click", disconnectWallet);
 
-    // ✅ Rimuove qualsiasi box debug accanto al pulsante (completamente)
+    // Hide all debug boxes except bottom log
     const topDebugs = document.querySelectorAll(
       "#debug-top, .debug-top, .debug, .debug-box, [id*='debug']"
     );
