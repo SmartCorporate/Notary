@@ -1,45 +1,55 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Imperium Notary</title>
-    <link rel="stylesheet" href="style.css" />
-    <script type="module" src="main.js"></script>
-  </head>
-
-  <body>
-    <div class="wallet-bar">
-      <div id="wallet-status" class="status-dot red"></div>
-      <span id="wallet-text">Wallet: disconnected</span>
-      <button id="connect-btn" class="btn">Connect Wallet</button>
-      <button id="disconnect-btn" class="btn hidden">Disconnect</button>
-      <span id="debug">Debug: idle</span>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IMPERIUM NOTARY</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <div id="wallet-panel" class="card">
+      <div class="wallet-header">
+        <span id="wallet-status" class="led red"></span>
+        <span id="wallet-text">Wallet: disconnected</span>
+        <button id="connect-btn" class="btn">Connect Wallet</button>
+        <button id="disconnect-btn" class="btn hidden">Disconnect</button>
+      </div>
     </div>
 
-    <div class="card">
+    <div id="network-status">
+      <span id="led-mainnet" class="led gray"></span>
+      <span class="label">Mainnet</span>
+      <span id="led-testnet" class="led gray"></span>
+      <span class="label">Testnet</span>
+    </div>
+
+    <div id="main-card" class="card">
       <h1>IMPERIUM NOTARY</h1>
-      <p>⚠️ Under Development — Secured by Bitcoin Blockchain</p>
-      <p>
-        Record your message on the
-        <strong>Stacks blockchain</strong>, permanently anchored to
-        <strong>Bitcoin’s immutability</strong>.
+      <p class="subtext">⚠️ Under Development — Secured by Bitcoin Blockchain</p>
+      <p class="desc">
+        Record your message on the <b>Stacks blockchain</b>, permanently anchored to
+        <b>Bitcoin’s immutability</b>.
       </p>
 
-      <textarea
-        id="message-input"
-        placeholder="Type your message here (max 500 characters)..."
-        maxlength="500"
-      ></textarea>
+      <textarea id="message" maxlength="500" placeholder="Type your message here (max 500 characters)..."></textarea>
 
-      <div class="fee">💰 Current Fee: 15.00 USD</div>
-
-      <div class="buttons">
-        <button id="notarize-btn" class="btn">🧾 Notarize</button>
-        <button id="verify-btn" class="btn">🔍 Verify by ID</button>
+      <div class="fee">
+        <span>💰 Current Fee: 15.00 USD</span>
       </div>
 
-      <div id="log" class="log-box">Event Log / Debug</div>
+      <div class="button-row">
+        <button id="btn-notarize" class="btn">🧾 Notarize</button>
+        <button id="btn-verify" class="btn">🔍 Verify by ID</button>
+      </div>
+
+      <div id="log-box">
+        <pre id="event-log">Event Log / Debug</pre>
+      </div>
     </div>
-  </body>
+  </div>
+
+  <script src="main.js"></script>
+  <script src="connection.js"></script>
+</body>
 </html>
