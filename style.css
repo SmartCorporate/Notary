@@ -2,7 +2,7 @@
 
 html, body {
   height: 100%;
-  margin:  0;
+  margin: 0;
   background: radial-gradient(circle at center, #0b0b0b 0%, #000000 100%);
   color: #f1f1f1;
   font-family: 'Orbitron', sans-serif;
@@ -12,7 +12,7 @@ html, body {
   overflow: hidden;
 }
 
-/* topbar */
+/* --- TOPBAR --- */
 .topbar {
   position: fixed;
   top: 20px;
@@ -43,7 +43,6 @@ html, body {
   border-radius: 50%;
   display: inline-block;
 }
-
 .semaforo.red { background: #6b0000; box-shadow: 0 0 6px rgba(255,0,0,0.2); }
 .semaforo.yellow { background: #b97a00; box-shadow: 0 0 6px rgba(255,150,0,0.2); }
 .semaforo.green { background: #2db84f; box-shadow: 0 0 8px rgba(45,184,79,0.25); }
@@ -73,14 +72,13 @@ button#connectBtn {
 }
 button#connectBtn:hover { transform: translateY(-2px); }
 
-/* debug mini */
 .debug-mini {
   color: #bbb;
   font-size: 0.85rem;
   opacity: 0.9;
 }
 
-/* main terminal box */
+/* --- TERMINAL BOX --- */
 .terminal-container {
   width: 100%;
   max-width: 760px;
@@ -187,7 +185,7 @@ textarea:focus {
   margin: 0;
 }
 
-/* popup styling */
+/* --- POPUP --- */
 #popup {
   display: none;
   position: fixed;

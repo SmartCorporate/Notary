@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- TOP BAR: wallet control -->
+  <!-- === WALLET BAR === -->
   <div class="topbar">
     <div class="wallet-control">
       <span id="semaforo" class="semaforo red"></span>
@@ -17,6 +17,7 @@
     <div class="debug-mini" id="debugMini">Debug: idle</div>
   </div>
 
+  <!-- === MAIN PANEL === -->
   <div class="terminal-container">
     <div class="terminal-box">
       <h1 class="title">IMPERIUM NOTARY</h1>
@@ -24,14 +25,18 @@
       <p class="description">
         Record your message on the <b>Stacks blockchain</b>, permanently anchored to <b>Bitcoin’s immutability</b>.
       </p>
-      <textarea id="message" maxlength="500" placeholder="Type your message (max 500 characters)..."></textarea>
+
+      <textarea id="message" maxlength="500" placeholder="Type your message here (max 500 characters)..."></textarea>
+
       <div class="info-line">
-        💰 <b>Current Fee:</b> <span id="fee">5.00</span> USD
+        💰 <b>Current Fee:</b> <span id="fee">15.00</span> USD
       </div>
+
       <div class="button-group">
         <button id="btn-notarize">⛓ Notarize</button>
         <button id="btn-verify">🔍 Verify by ID</button>
       </div>
+
       <div class="debug-area">
         <div class="debug-title">Event Log / Debug</div>
         <pre id="debugLog" class="debugLog"></pre>
@@ -39,6 +44,7 @@
     </div>
   </div>
 
+  <!-- === POPUP === -->
   <div id="popup">
     <div class="popup-content">
       <div id="popup-text">Processing...</div>
@@ -46,6 +52,8 @@
     </div>
   </div>
 
-  <script src="main.js"></script>
+  <!-- === STACKS CONNECT + MAIN === -->
+  <script type="module" src="https://cdn.jsdelivr.net/npm/@stacks/connect@latest/dist/connect.esm.js"></script>
+  <script type="module" src="main.js"></script>
 </body>
 </html>
