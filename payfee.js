@@ -1,74 +1,71 @@
-// --- IMPERIUM NOTARY - STX Payment Module (Testnet) ---
-// Requires @stacks/transactions + @stacks/network
-// Make sure param.js is loaded BEFORE this file
+// payfee.js
+// Gestione del pagamento STX verso indirizzo fisso "ironpool"
 
 window.IMPERIUM_PayFee = {};
 
-(function () {
+(async function () {
+
   async function sendFee() {
     try {
-      const param = window.IMPERIUM_PARAM;
-      const networkType = param.network === "mainnet" ? "mainnet" : "testnet";
-      const ironpool = param.ironpoolAddress;
-      const feeSTX = param.feeSTX;
-      const memo = param.memo || "Imperium Notary Fee";
+      window.IMPERIUM_LOG("💰 Avvio procedura pagamento STX...");
 
-      if (!ironpool || !feeSTX) {
-        alert("Missing Ironpool address or fee amount in param.js");
+      // Recupera parametri da param.js
+      const feeAmount = window.IMPERIUM_Params?.feeAmount || 5; // default 5 STX
+      const ironpoolAddress = window.IMPERIUM_Params?.ironpoolAddress || "ST26SDBSG7TJTQA10XY5WAHVCP4FV0750VKFK134M";
+
+      // Recupera indirizzo STX connesso
+      const senderAddress = window.IMPERIUM_Connection?.currentAddress;
+      if (!senderAddress) {
+        alert("⚠️ Nessun wallet STX connesso. Premi Connect Wallet prima di continuare.");
+        window.IMPERIUM_LOG("⚠️ Nessun wallet STX connesso.");
         return;
       }
 
       const provider = window.LeatherProvider || window.LeatherWallet;
       if (!provider) {
-        alert("Leather wallet not detected!");
+        alert("Leather Wallet non trovato. Installa o attiva l'estensione.");
         return;
       }
 
-      window.IMPERIUM_LOG(`💰 Preparing transfer of ${feeSTX} STX to ${ironpool}`);
+      window.IMPERIUM_LOG(`💼 Wallet STX sorgente: ${senderAddress}`);
+      window.IMPERIUM_LOG(`🎯 Destinazione IronPool: ${ironpoolAddress}`);
+      window.IMPERIUM_LOG(`💵 Importo: ${feeAmount} STX`);
 
-      // 1️⃣ Ottieni indirizzo STX dal wallet
-      const response = await provider.request("getAddresses");
-      const stxAddr = response?.result?.addresses?.find(a => a.type === "stacks")?.address;
+      // Conversione STX → microSTX (1 STX = 1_000_000 microSTX)
+      const microstxAmount = Math.floor(feeAmount * 1_000_000);
 
-      if (!stxAddr) {
-        window.IMPERIUM_LOG("⚠️ No STX address found. Check Leather settings or use testnet mode.");
-        alert("No STX address detected. Make sure Leather is set to Stacks Testnet.");
-        return;
-      }
-
-      window.IMPERIUM_LOG(`Sender STX address: ${stxAddr}`);
-
-      // 2️⃣ Configura rete
-      const network = new window.stacksTransactions.StacksTestnet();
-
-      // 3️⃣ Costruisci i parametri transazione
+      // Crea la transazione standard
       const txOptions = {
-        recipient: ironpool,
-        amount: feeSTX * 1_000_000, // microSTX
-        network,
-        memo,
+        recipient: ironpoolAddress,
+        amount: microstxAmount.toString(),
+        memo: "IMPERIUM Notary Fee Payment",
+        network: "testnet",
       };
 
-      // 4️⃣ Richiesta di invio tramite wallet
-      const txResponse = await provider.request("stx_transferStx", txOptions);
+      window.IMPERIUM_LOG("📦 Invio richiesta di pagamento al wallet...");
+      const tx = await provider.request("stx_transfer", txOptions);
 
-      if (txResponse?.result?.txid) {
-        window.IMPERIUM_LOG(`✅ Transaction sent! TXID: ${txResponse.result.txid}`);
-        alert(`Transaction sent!\nTXID: ${txResponse.result.txid}`);
+      if (tx?.result) {
+        window.IMPERIUM_LOG(`✅ Transazione inviata con successo! TXID: ${tx.result.txid || "(non disponibile)"}`);
+        alert(`Pagamento inviato con successo!\n\nTXID:\n${tx.result.txid}`);
       } else {
-        window.IMPERIUM_LOG("⚠️ Transaction canceled or failed.");
+        window.IMPERIUM_LOG("⚠️ Nessuna risposta dal wallet.");
+        alert("Errore: nessuna risposta dal wallet Leather.");
       }
+
     } catch (err) {
-      window.IMPERIUM_LOG(`❌ Error sending STX: ${err.message}`);
-      alert(`Error: ${err.message}`);
+      console.error(err);
+      alert(`Errore durante il pagamento STX:\n${err.message}`);
+      window.IMPERIUM_LOG(`❌ Errore durante il pagamento STX: ${err.message}`);
     }
   }
 
   function init() {
-    const btn = document.getElementById("btn-notarize");
-    if (btn) btn.addEventListener("click", sendFee);
-    window.IMPERIUM_LOG("💰 STX Payment module initialized.");
+    const payBtn = document.getElementById("notarize-btn");
+    if (payBtn) payBtn.addEventListener("click", sendFee);
+    window.IMPERIUM_LOG("🟢 Modulo pagamento STX inizializzato.");
   }
 
   window.IMPERIUM_PayFee.init = init;
+
 })();
