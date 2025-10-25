@@ -1,9 +1,8 @@
-// payfee.js — STX transfer module
+// payfee.js — STX transfer module (Testnet-ready)
 window.IMPERIUM_PayFee = {};
 
 (function () {
-  const { StacksTestnet, StacksMainnet } = window.StacksNetwork;
-  const { makeSTXTokenTransfer, broadcastTransaction, standardPrincipalCV } = window.StacksTransactions;
+  const { StacksTestnet, StacksMainnet, makeSTXTokenTransfer, broadcastTransaction, standardPrincipalCV } = window;
 
   async function sendFee() {
     const params = window.IMPERIUM_Params || {};
@@ -18,8 +17,8 @@ window.IMPERIUM_PayFee = {};
         return;
       }
 
-      // Determine network (based on Leather)
-      const network = new StacksTestnet(); // Testnet for now
+      // For now, we always use testnet
+      const network = new StacksTestnet();
       const amountMicroSTX = Math.floor(feeSTX * 1_000_000);
 
       const txOptions = {
@@ -27,15 +26,22 @@ window.IMPERIUM_PayFee = {};
         amount: amountMicroSTX,
         network,
         memo: "Imperium Notary Fee",
-        anchorMode: 3, // Any mode
+        anchorMode: 3,
       };
 
       window.IMPERIUM_LOG("🧾 Requesting Leather Wallet signature...");
 
+      // Try to call the wallet provider
+      if (!window.LeatherProvider || !window.LeatherProvider.request) {
+        alert("⚠️ Leather provider not available. Ensure Leather Wallet is unlocked and connected.");
+        window.IMPERIUM_LOG("⚠️ Leather provider not available.");
+        return;
+      }
+
       const response = await window.LeatherProvider.request("stx_transfer", txOptions);
 
       if (response && response.txId) {
-        const explorerUrl = `${network.coreApiUrl.replace("/v2", "")}/txid/${response.txId}`;
+        const explorerUrl = `https://explorer.stacks.co/txid/${response.txId}?chain=testnet`;
         window.IMPERIUM_LOG(`✅ Transaction broadcasted: ${response.txId}`);
         window.IMPERIUM_LOG(`🔗 View in explorer: ${explorerUrl}`);
         alert(`✅ Transfer successful!\nTXID: ${response.txId}`);
