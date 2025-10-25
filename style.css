@@ -1,4 +1,3 @@
-/* ===== GENERAL ===== */
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
 
 html, body {
@@ -13,7 +12,6 @@ html, body {
   overflow: hidden;
 }
 
-/* ===== TERMINAL CONTAINER ===== */
 .terminal-container {
   width: 100%;
   max-width: 700px;
@@ -31,7 +29,6 @@ html, body {
   animation: fadeIn 0.8s ease-in;
 }
 
-/* ===== TEXT ELEMENTS ===== */
 .title {
   color: #ff7a00;
   font-size: 2.2rem;
@@ -52,7 +49,6 @@ html, body {
   line-height: 1.5rem;
 }
 
-/* ===== TEXTAREA ===== */
 textarea {
   width: 100%;
   height: 140px;
@@ -73,14 +69,12 @@ textarea:focus {
   box-shadow: 0 0 15px rgba(255, 122, 0, 0.4);
 }
 
-/* ===== INFO LINE ===== */
 .info-line {
   margin-top: 0.7rem;
   font-size: 0.9rem;
   color: #bbb;
 }
 
-/* ===== BUTTONS ===== */
 .button-group {
   display: flex;
   justify-content: space-around;
@@ -104,7 +98,6 @@ button:hover {
   box-shadow: 0 0 25px rgba(255, 122, 0, 0.6);
 }
 
-/* ===== POPUP ===== */
 #popup {
   display: none;
   position: fixed;
@@ -129,7 +122,6 @@ button:hover {
   animation: popupIn 0.5s ease-out;
 }
 
-/* ===== ANIMATIONS ===== */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(15px); }
   to { opacity: 1; transform: translateY(0); }
@@ -140,7 +132,6 @@ button:hover {
   to { transform: scale(1); opacity: 1; }
 }
 
-/* ===== RESPONSIVE ===== */
 @media (max-width: 700px) {
   .title { font-size: 1.7rem; }
   .terminal-box { padding: 1.2rem; }

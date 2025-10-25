@@ -1,4 +1,4 @@
-// Configuration (later from param/config.json)
+// Configuration (can be dynamic later)
 let params = {
   fee: 5.0,
   maxChars: 500
@@ -13,10 +13,10 @@ const btnNotarize = document.getElementById("btn-notarize");
 const btnVerify = document.getElementById("btn-verify");
 const feeDisplay = document.getElementById("fee");
 
-// Initialize fee
+// Initialize
 feeDisplay.innerText = params.fee.toFixed(2);
 
-// Notarize
+// Notarize function
 btnNotarize.onclick = () => {
   const msg = messageInput.value.trim();
   if (!msg) return showPopup("⚠️ Please enter a message before notarizing.");
@@ -30,7 +30,7 @@ btnNotarize.onclick = () => {
   }, 1500);
 };
 
-// Verify
+// Verify function
 btnVerify.onclick = () => {
   showPopup("🔍 Verification feature coming soon...");
 };
