@@ -1,121 +1,88 @@
-// --- IMPERIUM NOTARY - Leather Wallet Connection (Functional Build) ---
+// connection.js
+// Connessione esclusiva a Stacks (STX) tramite Leather Wallet
+
 window.IMPERIUM_Connection = {};
 
-(function () {
-  const statusDot = document.getElementById("wallet-status");
-  const walletText = document.getElementById("wallet-text");
-  const connectBtn = document.getElementById("connect-btn");
-  const disconnectBtn = document.getElementById("disconnect-btn");
-
-  let connectedBTC = null;
-
-  function log(msg) {
-    window.IMPERIUM_LOG(msg);
-  }
-
-  function setStatus(connected, btc = "") {
-    if (connected) {
-      statusDot.classList.remove("red");
-      statusDot.classList.add("green");
-
-      if (btc) {
-        walletText.textContent = `Connected to wallet: ${btc}`;
-      } else {
-        walletText.textContent = "Wallet connected (no address returned)";
-      }
-
-      connectBtn.classList.add("hidden");
-      disconnectBtn.classList.remove("hidden");
-    } else {
-      statusDot.classList.remove("green");
-      statusDot.classList.add("red");
-      walletText.textContent = "Wallet: disconnected";
-      connectBtn.classList.remove("hidden");
-      disconnectBtn.classList.add("hidden");
-    }
-  }
+(async function () {
 
   async function connectWallet() {
     try {
       const provider = window.LeatherProvider || window.LeatherWallet;
       if (!provider) {
-        alert("Please install the Leather Wallet extension and reload the page.");
-        log("❌ Leather Wallet not detected.");
+        window.IMPERIUM_LOG("❌ Leather Wallet non trovato.");
+        alert("Leather Wallet non rilevato. Installa o attiva l'estensione.");
         return;
       }
 
-      log("🔄 Initializing Leather Wallet connection...");
+      window.IMPERIUM_LOG("🔌 Inizializzazione connessione a Leather Wallet...");
 
-      // Try multiple known methods to fetch BTC address
-      let response = null;
+      // Recupera tutti gli indirizzi dal wallet
+      const response = await provider.request("getAddresses");
+      const addresses = response?.result?.addresses || [];
+      console.log("🧾 getAddresses →", addresses);
 
-      try {
-        response = await provider.request("getAddresses");
-      } catch (err) {
-        log("Primary method failed, trying backup...");
-      }
+      // Cerca SOLO l'indirizzo STX
+      const stxAddr = addresses.find(a =>
+        a.symbol === "STX" ||
+        a.type === "stacks" ||
+        (a.network && a.network.includes("stacks"))
+      )?.address;
 
-      if (!response || !response.result || !response.result.addresses) {
-        try {
-          response = await provider.request("wallet_getAddresses");
-        } catch (err) {
-          log("Backup method failed, trying secondary fallback...");
-        }
-      }
-
-      if (!response || !response.result || !response.result.addresses) {
-        try {
-          response = await provider.request("stx_getAddresses");
-        } catch (err) {
-          log("Fallback to stx_getAddresses also failed.");
-        }
-      }
-
-      if (!response || !response.result || !response.result.addresses) {
-        log("⚠️ No usable addresses returned from Leather.");
-        setStatus(true);
+      if (!stxAddr) {
+        window.IMPERIUM_LOG("⚠️ Nessun indirizzo STX trovato nel wallet.");
+        alert("Nessun indirizzo STX trovato. Assicurati che Leather sia su Stacks Testnet o Mainnet.");
         return;
       }
 
-      const btcAddr = response.result.addresses.find(
-        (a) => a.type === "bitcoin" || a.purpose === "payment" || a.symbol === "BTC"
-      );
+      // Aggiorna UI
+      const walletText = document.getElementById("wallet-text");
+      const walletLed = document.getElementById("wallet-status");
+      const connectBtn = document.getElementById("connect-btn");
+      const disconnectBtn = document.getElementById("disconnect-btn");
 
-      if (btcAddr && btcAddr.address) {
-        connectedBTC = btcAddr.address;
-        setStatus(true, connectedBTC);
-        log("✅ Leather Wallet connected successfully.");
-        log(`BTC address: ${connectedBTC}`);
-      } else {
-        setStatus(true);
-        log("⚠️ Connected, but no Bitcoin address returned.");
-      }
+      walletText.textContent = `Connected: ${stxAddr}`;
+      walletLed.classList.remove("red");
+      walletLed.classList.add("green");
+      connectBtn.classList.add("hidden");
+      disconnectBtn.classList.remove("hidden");
+
+      // Salva globalmente l’indirizzo STX
+      window.IMPERIUM_Connection.currentAddress = stxAddr;
+      window.IMPERIUM_LOG(`✅ STX address connesso: ${stxAddr}`);
+
     } catch (err) {
-      setStatus(false);
-      log("❌ Connection failed: " + err.message);
-      alert("Connection failed: " + err.message);
+      console.error(err);
+      alert(`Errore durante la connessione al wallet: ${err.message}`);
+      window.IMPERIUM_LOG(`❌ Errore: ${err.message}`);
     }
   }
 
   function disconnectWallet() {
-    connectedBTC = null;
-    setStatus(false);
-    log("🔌 Wallet disconnected manually.");
+    const walletText = document.getElementById("wallet-text");
+    const walletLed = document.getElementById("wallet-status");
+    const connectBtn = document.getElementById("connect-btn");
+    const disconnectBtn = document.getElementById("disconnect-btn");
+
+    walletText.textContent = "Wallet: disconnected";
+    walletLed.classList.remove("green");
+    walletLed.classList.add("red");
+    connectBtn.classList.remove("hidden");
+    disconnectBtn.classList.add("hidden");
+
+    window.IMPERIUM_Connection.currentAddress = null;
+    window.IMPERIUM_LOG("🔌 Wallet disconnesso.");
   }
 
   function init() {
-    log("🟠 Starting Leather Wallet connection module...");
-    setStatus(false);
+    const connectBtn = document.getElementById("connect-btn");
+    const disconnectBtn = document.getElementById("disconnect-btn");
 
-    connectBtn.addEventListener("click", connectWallet);
-    disconnectBtn.addEventListener("click", disconnectWallet);
+    if (connectBtn) connectBtn.addEventListener("click", connectWallet);
+    if (disconnectBtn) disconnectBtn.addEventListener("click", disconnectWallet);
 
-    if (window.LeatherProvider || window.LeatherWallet) {
-      log("✅ Leather Wallet extension detected and ready.");
-    } else {
-      log("⚠️ Leather Wallet not detected. Please install the extension.");
-    }
+    window.IMPERIUM_LOG("🟡 Modulo connessione STX pronto.");
   }
 
   window.IMPERIUM_Connection.init = init;
+
 })();
