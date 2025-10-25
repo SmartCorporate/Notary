@@ -1,16 +1,15 @@
-// --- IMPERIUM NOTARY - Leather Wallet Direct API Connection (v0.3 fixed) ---
+// --- IMPERIUM NOTARY - Leather Wallet Direct API Connection (v0.4 clean) ---
 window.IMPERIUM_Connection = {};
 
 (function () {
-  const { appName, appIcon } = window.IMPERIUM_CONFIG;
-
   const statusDot = document.getElementById("wallet-status");
   const walletText = document.getElementById("wallet-text");
   const connectBtn = document.getElementById("connect-btn");
   const disconnectBtn = document.getElementById("disconnect-btn");
   const debugBox = document.getElementById("debug");
 
-  let connectedAddress = null;
+  let connectedBTC = null;
+  let connectedSTX = null;
 
   // --- Utility logging ---
   function log(msg) {
@@ -18,11 +17,11 @@ window.IMPERIUM_Connection = {};
     if (debugBox) debugBox.textContent = "Debug: " + msg;
   }
 
-  function setStatus(connected, address = "") {
+  function setStatus(connected, displayAddr = "") {
     if (connected) {
       statusDot.classList.remove("red");
       statusDot.classList.add("green");
-      walletText.textContent = `Wallet: ${address}`;
+      walletText.textContent = `Wallet: ${displayAddr}`;
       connectBtn.classList.add("hidden");
       disconnectBtn.classList.remove("hidden");
     } else {
@@ -48,16 +47,25 @@ window.IMPERIUM_Connection = {};
       const response = await provider.request("getAddresses");
 
       if (response?.result?.addresses?.length > 0) {
-        // 🔍 Cerca indirizzo Stacks usando entrambi i campi possibili
-        const stacksAddr = response.result.addresses.find(
+        const btc = response.result.addresses.find(
+          a => a.type === "bitcoin" || a.purpose === "payment"
+        );
+        const stx = response.result.addresses.find(
           a => a.type === "stacks" || a.purpose === "stacks"
         );
-        const addr = stacksAddr ? stacksAddr.address : response.result.addresses[0].address;
 
-        connectedAddress = addr;
-        setStatus(true, addr);
+        connectedBTC = btc ? btc.address : null;
+        connectedSTX = stx ? stx.address : null;
 
-        log(`Connected to wallet (${stacksAddr ? "Stacks" : "Bitcoin"}): ${addr}`);
+        const display = connectedSTX || connectedBTC || "unknown";
+        setStatus(true, display);
+
+        // Log dettagliato sotto
+        log("Connected successfully.");
+        if (connectedBTC) window.IMPERIUM_LOG(`BTC address: ${connectedBTC}`);
+        if (connectedSTX) window.IMPERIUM_LOG(`STX address: ${connectedSTX}`);
+        if (!connectedSTX && !connectedBTC)
+          window.IMPERIUM_LOG("⚠️ No usable addresses returned.");
       } else {
         log("No address returned from wallet.");
       }
@@ -69,7 +77,8 @@ window.IMPERIUM_Connection = {};
 
   // --- Disconnect Wallet (local only) ---
   function disconnectWallet() {
-    connectedAddress = null;
+    connectedBTC = null;
+    connectedSTX = null;
     setStatus(false);
     log("Wallet disconnected manually.");
   }
@@ -82,11 +91,13 @@ window.IMPERIUM_Connection = {};
     connectBtn.addEventListener("click", connectWallet);
     disconnectBtn.addEventListener("click", disconnectWallet);
 
-    // ✅ Nasconde qualsiasi box debug in alto (indipendentemente dal nome)
+    // ✅ Rimuove qualsiasi box debug accanto al pulsante (completamente)
     const topDebugs = document.querySelectorAll(
-      "#debug-top, .debug-top, .debug, .debug-box"
+      "#debug-top, .debug-top, .debug, .debug-box, [id*='debug']"
     );
-    topDebugs.forEach(el => (el.style.display = "none"));
+    topDebugs.forEach(el => {
+      if (el !== debugBox) el.style.display = "none";
+    });
 
     if (window.LeatherProvider || window.LeatherWallet) {
       log("✅ Leather Wallet extension detected and ready.");
