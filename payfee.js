@@ -9,11 +9,11 @@ window.IMPERIUM_PayFee = {};
     try {
       window.IMPERIUM_LOG("💰 Initializing STX fee payment...");
 
-      // Load parameters
+      // Load parameters from param.js
       const feeAmount = window.IMPERIUM_Params?.feeAmount || 5.0;
       const ironpoolAddress = window.IMPERIUM_Params?.ironpoolAddress || "ST26SDBSG7TJTQA10XY5WAHVCP4FV0750VKFK134M";
 
-      // Get connected STX wallet address
+      // Get connected wallet address
       const senderAddress = window.IMPERIUM_Connection?.currentAddress;
       if (!senderAddress) {
         alert("⚠️ No STX wallet connected. Please connect your wallet first.");
@@ -21,7 +21,7 @@ window.IMPERIUM_PayFee = {};
         return;
       }
 
-      // Get provider (Leather)
+      // Get Leather provider
       const provider = window.LeatherProvider || window.LeatherWallet;
       if (!provider) {
         alert("Leather Wallet not detected. Please install or enable the extension.");
@@ -29,25 +29,33 @@ window.IMPERIUM_PayFee = {};
         return;
       }
 
-      // Log transaction data
-      window.IMPERIUM_LOG(`🔹 Sender (STX): ${senderAddress}`);
-      window.IMPERIUM_LOG(`🔹 Recipient (IronPool): ${ironpoolAddress}`);
-      window.IMPERIUM_LOG(`🔹 Amount: ${feeAmount} STX`);
-
       // Convert STX → microSTX
       const microstxAmount = Math.floor(feeAmount * 1_000_000);
 
-      // Create transfer transaction for testnet
+      // Define the network properly (Testnet4)
+      const network = {
+        name: "testnet",
+        chainId: 2147483648, // Testnet chain ID
+        coreApiUrl: "https://stacks-node-api.testnet.stacks.co"
+      };
+
+      // Log transaction data
+      window.IMPERIUM_LOG(`🔹 Sender: ${senderAddress}`);
+      window.IMPERIUM_LOG(`🔹 Recipient: ${ironpoolAddress}`);
+      window.IMPERIUM_LOG(`🔹 Amount: ${feeAmount} STX`);
+      window.IMPERIUM_LOG(`🔹 Network: ${network.name}`);
+
+      // Create transaction payload
       const txOptions = {
         recipient: ironpoolAddress,
         amount: microstxAmount.toString(),
-        network: "testnet",
         memo: "Imperium Notary Fee",
+        network: network,
       };
 
       window.IMPERIUM_LOG("📦 Sending payment request to Leather Wallet...");
 
-      // Send transaction (new API method)
+      // Send transaction
       const txResponse = await provider.request("stx_sendTransfer", txOptions);
 
       if (txResponse?.result) {
@@ -76,7 +84,7 @@ window.IMPERIUM_PayFee = {};
     }
   }
 
-  // Initialize when loaded
+  // Initialize module
   window.IMPERIUM_PayFee.init = init;
 
 })();
