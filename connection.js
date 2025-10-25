@@ -1,4 +1,4 @@
-// --- IMPERIUM NOTARY - MODULE: connection.js con check wallet installed ---
+// --- connection.js versione robusta per Leather + fallback libreria ---
 
 window.IMPERIUM_Connection = {};
 
@@ -13,33 +13,56 @@ window.IMPERIUM_Connection = {};
 
   let userSession = null;
 
-  const STACKS_CDN_PRIMARY = "https://cdn.jsdelivr.net/npm/@stacks/connect@7.4.0/dist/connect.umd.min.js";
-  const STACKS_CDN_BACKUP = "https://unpkg.com/@stacks/connect@7.4.0/dist/connect.umd.js";
+  const STACKS_CDN_PRIMARY = "https://cdn.jsdelivr.net/npm/@stacks/connect@8.1.9/dist/connect.umd.min.js";
+  const STACKS_CDN_BACKUP = "https://unpkg.com/@stacks/connect@8.1.9/dist/connect.umd.js";
+  const LOAD_TIMEOUT = 5000; // 5 secondi timeout
 
   async function loadStacksScript() {
     return new Promise((resolve, reject) => {
       if (window.StacksConnect) return resolve("already loaded");
+      let finished = false;
+
+      const timeoutId = setTimeout(() => {
+        if (!finished) {
+          finished = true;
+          reject("Timeout loading StacksConnect script");
+        }
+      }, LOAD_TIMEOUT);
+
       const script = document.createElement("script");
       script.src = STACKS_CDN_PRIMARY;
       script.async = true;
       script.onload = () => {
+        finished = true;
+        clearTimeout(timeoutId);
         if (window.StacksConnect) {
-          IMPERIUM_LOG("✅ Loaded StacksConnect from jsDelivr");
+          window.IMPERIUM_LOG("✅ Loaded StacksConnect (primary)");
           resolve("primary");
-        } else reject("StacksConnect missing after primary load");
+        } else {
+          reject("StacksConnect not defined after primary load");
+        }
       };
       script.onerror = () => {
-        IMPERIUM_LOG("⚠️ Primary CDN failed, trying backup...");
+        if (finished) return;
+        window.IMPERIUM_LOG("⚠️ Primary CDN failed, trying backup...");
         const backup = document.createElement("script");
         backup.src = STACKS_CDN_BACKUP;
         backup.async = true;
         backup.onload = () => {
+          finished = true;
+          clearTimeout(timeoutId);
           if (window.StacksConnect) {
-            IMPERIUM_LOG("✅ Loaded StacksConnect from unpkg backup");
+            window.IMPERIUM_LOG("✅ Loaded StacksConnect (backup)");
             resolve("backup");
-          } else reject("StacksConnect missing after backup load");
+          } else {
+            reject("StacksConnect not defined after backup load");
+          }
         };
-        backup.onerror = () => reject("Both CDN sources failed");
+        backup.onerror = () => {
+          finished = true;
+          clearTimeout(timeoutId);
+          reject("Both CDN failed");
+        };
         document.head.appendChild(backup);
       };
       document.head.appendChild(script);
@@ -62,75 +85,98 @@ window.IMPERIUM_Connection = {};
     }
   }
 
-  function connectWallet() {
+  async function connectWallet() {
+    // verificare se l’estensione è presente
     if (!window.StacksConnect) {
-      debugBox.textContent = "Debug: wallet extension not detected";
-      IMPERIUM_LOG("⚠️ Wallet extension not installed or library not loaded.");
-      alert("Please install Leather Wallet (or other Stacks wallet) to connect.");
+      debugBox.textContent = "Debug: wallet extension or library not loaded";
+      window.IMPERIUM_LOG("⚠️ StacksConnect not loaded or extension missing");
+      showPopup("Install the Leather browser extension to connect wallet.");
       return;
     }
-    const { showConnect, AppConfig, UserSession } = window.StacksConnect;
-    const appConfig = new AppConfig(["store_write"]);
-    userSession = new UserSession({ appConfig });
 
-    debugBox.textContent = "Debug: opening wallet...";
-    IMPERIUM_LOG("🟠 Opening Leather wallet popup...");
+    try {
+      const { showConnect, AppConfig, UserSession } = window.StacksConnect;
+      const appConfig = new AppConfig(["store_write"]);
+      userSession = new UserSession({ appConfig });
 
-    showConnect({
-      appDetails: { name: appName, icon: appIcon },
-      userSession,
-      onFinish: () => {
-        const data = userSession.loadUserData();
-        const addr = data?.profile?.stxAddress?.mainnet || "Unknown";
-        setStatus(true, addr);
-        debugBox.textContent = "Debug: wallet connected";
-        IMPERIUM_LOG(`✅ Wallet connected: ${addr}`);
-      },
-      onCancel: () => {
-        debugBox.textContent = "Debug: connection canceled";
-        IMPERIUM_LOG("❌ Wallet connection canceled");
-      },
-    });
+      debugBox.textContent = "Debug: opening wallet...";
+      window.IMPERIUM_LOG("🟠 Opening wallet connect flow");
+
+      showConnect({
+        appDetails: { name: appName, icon: appIcon },
+        userSession,
+        onFinish: () => {
+          try {
+            const data = userSession.loadUserData();
+            const addr = data?.profile?.stxAddress?.mainnet || "Unknown";
+            setStatus(true, addr);
+            debugBox.textContent = "Debug: wallet connected";
+            window.IMPERIUM_LOG(`✅ Wallet connected: ${addr}`);
+          } catch(err) {
+            debugBox.textContent = "Debug: error reading user data";
+            window.IMPERIUM_LOG("❌ Error retrieving user data: " + err);
+          }
+        },
+        onCancel: () => {
+          debugBox.textContent = "Debug: connection cancelled";
+          window.IMPERIUM_LOG("❌ User cancelled wallet connection");
+        }
+      });
+    } catch (err) {
+      debugBox.textContent = "Debug: connectWallet error: " + err;
+      window.IMPERIUM_LOG("❌ connectWallet error: " + err);
+    }
   }
 
   function disconnectWallet() {
-    if (userSession?.isUserSignedIn()) {
-      userSession.signUserOut();
-      setStatus(false);
-      debugBox.textContent = "Debug: disconnected";
-      IMPERIUM_LOG("🔴 Wallet disconnected");
+    try {
+      if (userSession && userSession.isUserSignedIn()) {
+        userSession.signUserOut();
+        setStatus(false);
+        debugBox.textContent = "Debug: disconnected";
+        window.IMPERIUM_LOG("🔴 Wallet disconnected");
+      } else {
+        debugBox.textContent = "Debug: not signed in";
+        window.IMPERIUM_LOG("⚠️ disconnect called but not signed in");
+      }
+    } catch(err) {
+      debugBox.textContent = "Debug: disconnect error " + err;
+      window.IMPERIUM_LOG("❌ disconnectWallet error: " + err);
     }
   }
 
   async function init() {
     try {
-      await loadStacksScript();
+      await loadStacksScript(); 
       const { AppConfig, UserSession } = window.StacksConnect;
       const appConfig = new AppConfig(["store_write"]);
       userSession = new UserSession({ appConfig });
 
       if (userSession.isSignInPending()) {
-        debugBox.textContent = "Debug: completing sign-in...";
-        userSession.handlePendingSignIn().then((userData) => {
-          const addr = userData.profile?.stxAddress?.mainnet;
-          setStatus(true, addr);
-          IMPERIUM_LOG(`✅ Signed in as: ${addr}`);
-        });
+        debugBox.textContent = "Debug: completing pending sign-in";
+        await userSession.handlePendingSignIn();
+        const data = userSession.loadUserData();
+        const addr = data.profile?.stxAddress?.mainnet;
+        setStatus(true, addr);
+        window.IMPERIUM_LOG(`✅ Finished pending sign in: ${addr}`);
       } else if (userSession.isUserSignedIn()) {
         const data = userSession.loadUserData();
         const addr = data.profile?.stxAddress?.mainnet;
         setStatus(true, addr);
-        IMPERIUM_LOG(`✅ Wallet already connected: ${addr}`);
+        window.IMPERIUM_LOG(`✅ Already signed in: ${addr}`);
       } else {
         setStatus(false);
-        IMPERIUM_LOG("❌ Wallet not connected");
+        window.IMPERIUM_LOG("❌ Wallet not connected yet");
       }
 
       connectBtn.addEventListener("click", connectWallet);
       disconnectBtn.addEventListener("click", disconnectWallet);
-      IMPERIUM_LOG("🧩 Connection module ready.");
+      window.IMPERIUM_LOG("🧩 Connection module ready");
+      debugBox.textContent = "Debug: module ready";
     } catch (err) {
-      IMPERIUM_LOG("❌ Error loading connection module: " + err);
+      debugBox.textContent = "Debug: init error " + err;
+      window.IMPERIUM_LOG("❌ init error: " + err);
+      showPopup("Cannot load wallet library: " + err);
     }
   }
 
