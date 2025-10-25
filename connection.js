@@ -1,5 +1,5 @@
 // connection.js
-// Connessione esclusiva a Stacks (STX) tramite Leather Wallet
+// Exclusive connection to Stacks (STX) via Leather Wallet
 
 window.IMPERIUM_Connection = {};
 
@@ -9,19 +9,19 @@ window.IMPERIUM_Connection = {};
     try {
       const provider = window.LeatherProvider || window.LeatherWallet;
       if (!provider) {
-        window.IMPERIUM_LOG("❌ Leather Wallet non trovato.");
-        alert("Leather Wallet non rilevato. Installa o attiva l'estensione.");
+        window.IMPERIUM_LOG("❌ [Connection] Leather Wallet not found.");
+        alert("Leather Wallet not detected. Please install or enable the extension.");
         return;
       }
 
-      window.IMPERIUM_LOG("🔌 Inizializzazione connessione a Leather Wallet...");
+      window.IMPERIUM_LOG("🔌 [Connection] Initializing Leather Wallet connection...");
 
-      // Recupera tutti gli indirizzi dal wallet
+      // Retrieve all addresses from the wallet
       const response = await provider.request("getAddresses");
       const addresses = response?.result?.addresses || [];
       console.log("🧾 getAddresses →", addresses);
 
-      // Cerca SOLO l'indirizzo STX
+      // Find ONLY the STX address
       const stxAddr = addresses.find(a =>
         a.symbol === "STX" ||
         a.type === "stacks" ||
@@ -29,12 +29,12 @@ window.IMPERIUM_Connection = {};
       )?.address;
 
       if (!stxAddr) {
-        window.IMPERIUM_LOG("⚠️ Nessun indirizzo STX trovato nel wallet.");
-        alert("Nessun indirizzo STX trovato. Assicurati che Leather sia su Stacks Testnet o Mainnet.");
+        window.IMPERIUM_LOG("⚠️ [Connection] No STX address found in the wallet.");
+        alert("No STX address detected. Make sure Leather is set to Stacks Testnet or Mainnet.");
         return;
       }
 
-      // Aggiorna UI
+      // Update UI
       const walletText = document.getElementById("wallet-text");
       const walletLed = document.getElementById("wallet-status");
       const connectBtn = document.getElementById("connect-btn");
@@ -46,14 +46,14 @@ window.IMPERIUM_Connection = {};
       connectBtn.classList.add("hidden");
       disconnectBtn.classList.remove("hidden");
 
-      // Salva globalmente l’indirizzo STX
+      // Save STX address globally
       window.IMPERIUM_Connection.currentAddress = stxAddr;
-      window.IMPERIUM_LOG(`✅ STX address connesso: ${stxAddr}`);
+      window.IMPERIUM_LOG(`✅ [Connection] STX address connected: ${stxAddr}`);
 
     } catch (err) {
       console.error(err);
-      alert(`Errore durante la connessione al wallet: ${err.message}`);
-      window.IMPERIUM_LOG(`❌ Errore: ${err.message}`);
+      alert(`Wallet connection error: ${err.message}`);
+      window.IMPERIUM_LOG(`❌ [Connection] Error: ${err.message}`);
     }
   }
 
@@ -70,7 +70,7 @@ window.IMPERIUM_Connection = {};
     disconnectBtn.classList.add("hidden");
 
     window.IMPERIUM_Connection.currentAddress = null;
-    window.IMPERIUM_LOG("🔌 Wallet disconnesso.");
+    window.IMPERIUM_LOG("🔌 [Connection] Wallet disconnected.");
   }
 
   function init() {
@@ -80,7 +80,7 @@ window.IMPERIUM_Connection = {};
     if (connectBtn) connectBtn.addEventListener("click", connectWallet);
     if (disconnectBtn) disconnectBtn.addEventListener("click", disconnectWallet);
 
-    window.IMPERIUM_LOG("🟡 Modulo connessione STX pronto.");
+    window.IMPERIUM_LOG("🟡 [Connection] STX connection module ready.");
   }
 
   window.IMPERIUM_Connection.init = init;
