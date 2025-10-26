@@ -1,4 +1,4 @@
-// param.js — v1.12 Imperium Notary UI (LED connection status)
+// param.js — v1.13 Imperium Notary UI (clean full-green LED on connection)
 
 window.IMPERIUM_PARAM = {
   version: "1.0.0",
@@ -36,11 +36,11 @@ window.addEventListener("load", () => {
         font-size: 0.95rem;
       ">
         <span id="wallet-led" style="
-          width: 12px;
-          height: 12px;
+          width: 14px;
+          height: 14px;
           border-radius: 50%;
           background-color: #ff3333;
-          box-shadow: 0 0 8px #ff3333;
+          box-shadow: 0 0 10px #ff3333;
           display: inline-block;
           transition: all 0.3s ease;
         "></span>
@@ -58,8 +58,8 @@ window.IMPERIUM_LED = {
     const led = document.getElementById("wallet-led");
     const addr = document.getElementById("wallet-address");
     if (led) {
-      led.style.backgroundColor = "#00ff66";
-      led.style.boxShadow = "0 0 10px #00ff66";
+      led.style.backgroundColor = "#00ff55";
+      led.style.boxShadow = "0 0 15px #00ff55";
     }
     if (addr) addr.textContent = address || "Connected";
     window.IMPERIUM_LOG(`✅ [Connection] STX address connected: ${address}`);
@@ -70,7 +70,7 @@ window.IMPERIUM_LED = {
     const addr = document.getElementById("wallet-address");
     if (led) {
       led.style.backgroundColor = "#ff3333";
-      led.style.boxShadow = "0 0 8px #ff3333";
+      led.style.boxShadow = "0 0 10px #ff3333";
     }
     if (addr) addr.textContent = "";
     window.IMPERIUM_LOG("🔌 [Connection] Wallet disconnected.");
