@@ -1,4 +1,4 @@
-// param.js — stable auto-network detection for Imperium Notary
+// param.js — live network detection for Imperium Notary
 
 window.IMPERIUM_PARAM = {
   ironpoolAddress_mainnet: "SP26SDBSG7TJTQA10XY5WAHVCP4FV0750VH30XYB4",
@@ -9,9 +9,7 @@ window.IMPERIUM_PARAM = {
   ironpoolAddress: "SP26SDBSG7TJTQA10XY5WAHVCP4FV0750VH30XYB4"
 };
 
-// ----------------------------
-// Utility: detect network from address prefix
-// ----------------------------
+// Detect network from address prefix
 function detectNetworkFromAddress(address) {
   if (!address) return "mainnet";
   if (address.startsWith("ST")) return "testnet";
@@ -19,38 +17,44 @@ function detectNetworkFromAddress(address) {
   return "mainnet";
 }
 
-// ----------------------------
-// Initialize Imperium Network
-// ----------------------------
-(async () => {
+// Print current state clearly
+function logNetworkStatus(address, network, ironpool) {
+  console.log("---------------------------------------------------");
+  console.log(`🧠 [Imperium] Wallet Address: ${address || "N/A"}`);
+  console.log(`🕰️ Imperium Notary initialized for network: ${network.toUpperCase()}`);
+  console.log(`💎 Active IronPool Address: ${ironpool}`);
+  console.log("---------------------------------------------------");
+}
+
+// Re-run detection once Leather is ready
+async function detectNetworkLive() {
   try {
-    console.log("🕰️ [Imperium] Starting network detection...");
-
     const provider = window.LeatherProvider || window.btc;
-    let detectedAddress = null;
-
-    // Check if provider exists and is available
-    if (provider && provider.request) {
-      const resp = await provider.request("getAddresses");
-      const stxAcc = resp?.result?.addresses?.find(a => a.symbol === "STX");
-      detectedAddress = stxAcc?.address || null;
+    if (!provider?.request) {
+      console.warn("[Imperium] Leather provider not found yet, retrying...");
+      setTimeout(detectNetworkLive, 1000);
+      return;
     }
 
-    // Detect network from prefix
-    const walletNetwork = detectNetworkFromAddress(detectedAddress);
-    const activeIronPool =
-      walletNetwork === "mainnet"
+    const resp = await provider.request("getAddresses");
+    const stxAcc = resp?.result?.addresses?.find(a => a.symbol === "STX");
+    const stxAddr = stxAcc?.address || null;
+
+    const net = detectNetworkFromAddress(stxAddr);
+    const ironpool =
+      net === "mainnet"
         ? window.IMPERIUM_PARAM.ironpoolAddress_mainnet
         : window.IMPERIUM_PARAM.ironpoolAddress_testnet;
 
-    // Update globals
-    window.IMPERIUM_PARAM.network = walletNetwork;
-    window.IMPERIUM_PARAM.ironpoolAddress = activeIronPool;
+    window.IMPERIUM_PARAM.network = net;
+    window.IMPERIUM_PARAM.ironpoolAddress = ironpool;
 
-    console.log(`🕰️ Imperium Notary initialized for network: ${walletNetwork.toUpperCase()}`);
-    console.log(`💎 Active IronPool Address: ${activeIronPool}`);
-
+    logNetworkStatus(stxAddr, net, ironpool);
   } catch (err) {
-    console.error("[Imperium] ❌ Error detecting wallet network:", err);
+    console.error("[Imperium] ❌ Error detecting network:", err);
   }
-})();
+}
+
+// Run immediately and again after Leather connects
+console.log("🕰️ [Imperium] Starting live network detection...");
+detectNetworkLive();
