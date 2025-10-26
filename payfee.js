@@ -1,9 +1,44 @@
-// payfee.js — Mainnet-only version for stable balance + transfer test
+// payfee.js — Mainnet + AutoConnect + Stacks SDK Loader
 // Fully compatible with Leather Wallet (Stacks v2.x)
 
 window.IMPERIUM_PayFee = {};
 
 (function () {
+  //---------------------------------------------------------------------------
+  // 🧩 Load Stacks SDK dynamically if not already in page
+  //---------------------------------------------------------------------------
+  async function loadStacksSDK() {
+    if (window.openSTXTransfer) {
+      window.IMPERIUM_LOG("[SDK] ✅ Stacks SDK already loaded.");
+      return true;
+    }
+    window.IMPERIUM_LOG("[SDK] ⏳ Loading Stacks SDK...");
+    try {
+      const script = document.createElement("script");
+      script.src =
+        "https://unpkg.com/@stacks/connect-react@latest/dist/connect-react.min.js";
+      script.async = true;
+      document.head.appendChild(script);
+
+      // Wait until loaded
+      await new Promise((resolve, reject) => {
+        script.onload = () => {
+          window.IMPERIUM_LOG("[SDK] ✅ Stacks SDK loaded successfully.");
+          resolve();
+        };
+        script.onerror = () =>
+          reject(new Error("Failed to load Stacks SDK script."));
+      });
+      return true;
+    } catch (err) {
+      window.IMPERIUM_LOG(`[SDK] ❌ Error loading SDK: ${err.message}`);
+      return false;
+    }
+  }
+
+  //---------------------------------------------------------------------------
+  // ⚙️ Core transaction logic
+  //---------------------------------------------------------------------------
   async function sendFee() {
     try {
       window.IMPERIUM_LOG("[PayFee] 🔸 Starting transaction process...");
@@ -11,7 +46,7 @@ window.IMPERIUM_PayFee = {};
       const params = window.IMPERIUM_PARAM || {};
       const recipient =
         params.ironpoolAddress ||
-        "SP2C2VYZNVCG2CB9TY6M5JED8J9EWTNH17A2GQ3FG"; // recipient mainnet
+        "SP2C2VYZNVCG2CB9TY6M5JED8J9EWTNH17A2GQ3FG";
       const feeSTX = params.feeSTX || 1.0;
       const memo = params.feeMemo || "Imperium Notary Fee";
 
@@ -42,7 +77,7 @@ window.IMPERIUM_PayFee = {};
       window.IMPERIUM_LOG(`[PayFee] 🌐 Network: MAINNET`);
       window.IMPERIUM_LOG(`[PayFee] 💼 Active STX address: ${activeAddress}`);
 
-      // --- Fetch balance from Hiro MAINNET API ---
+      // --- Fetch balance from Hiro API ---
       const apiBase = "https://api.hiro.so";
       window.IMPERIUM_LOG(`[PayFee] 🌍 Using Hiro API endpoint: ${apiBase}`);
 
@@ -74,7 +109,8 @@ window.IMPERIUM_PayFee = {};
         return;
       }
 
-      // --- Check Stacks SDK availability ---
+      // --- Ensure Stacks SDK is loaded ---
+      await loadStacksSDK();
       const { openSTXTransfer } = window;
       if (!openSTXTransfer) {
         alert("❌ Missing Stacks SDK in page context.");
@@ -111,19 +147,45 @@ window.IMPERIUM_PayFee = {};
     }
   }
 
-  // --- Initialization ---
+  //---------------------------------------------------------------------------
+  // 🔄 Auto-connect wallet on page load
+  //---------------------------------------------------------------------------
+  async function autoConnectWallet() {
+    try {
+      const provider = window.LeatherProvider || window.btc;
+      if (!provider || !provider.request) return;
+
+      const addrResp = await provider.request("getAddresses");
+      const stxAccount = addrResp?.result?.addresses?.find(
+        (a) => a.symbol === "STX"
+      );
+
+      if (stxAccount?.address) {
+        window.STXAddress = stxAccount.address;
+        const display = document.getElementById("wallet-status");
+        if (display) {
+          display.innerHTML = `Connected: <b>${stxAccount.address}</b>`;
+        }
+        window.IMPERIUM_LOG(
+          `[Connection] 🔗 Auto-connected wallet: ${stxAccount.address}`
+        );
+      }
+    } catch (err) {
+      window.IMPERIUM_LOG(`[Connection] ⚠️ AutoConnect failed: ${err.message}`);
+    }
+  }
+
+  //---------------------------------------------------------------------------
+  // 🧠 Initialization
+  //---------------------------------------------------------------------------
   function init() {
     const btn = document.getElementById("btn-notarize");
     if (btn) {
       btn.addEventListener("click", sendFee);
       window.IMPERIUM_LOG("[PayFee] 🟢 Button listener attached successfully.");
-    } else {
-      window.IMPERIUM_LOG(
-        "[PayFee] ⚠️ Button not found in DOM (btn-notarize)."
-      );
     }
 
-    // --- Log autoscroll ---
+    // Auto-scroll log
     const oldLog = window.IMPERIUM_LOG;
     window.IMPERIUM_LOG = function (msg) {
       const logBox = document.getElementById("event-log");
@@ -140,6 +202,12 @@ window.IMPERIUM_PayFee = {};
       }
       console.log(line);
     };
+
+    // Auto connect wallet on load
+    window.addEventListener("load", () => {
+      autoConnectWallet();
+      loadStacksSDK();
+    });
   }
 
   window.IMPERIUM_PayFee.init = init;
