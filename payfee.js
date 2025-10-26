@@ -1,5 +1,5 @@
-// payfee.js — v1.8 Imperium Notary
-// Manual connect + visible log + stable SDK + proper colors
+// payfee.js — v1.9 Imperium Notary Logic
+// Manual connect + Improved LED UI + Stable SDK + Full Log
 
 window.IMPERIUM_PayFee = {};
 
@@ -16,8 +16,7 @@ window.IMPERIUM_PayFee = {};
     window.IMPERIUM_LOG("[SDK] ⏳ Loading Stacks SDK...");
     try {
       const script = document.createElement("script");
-      script.src =
-        "https://cdn.jsdelivr.net/npm/@stacks/connect@2.0.1/dist/index.umd.js";
+      script.src = "https://cdn.jsdelivr.net/npm/@stacks/connect@2.0.1/dist/index.umd.js";
       script.async = true;
       document.head.appendChild(script);
 
@@ -32,6 +31,7 @@ window.IMPERIUM_PayFee = {};
         };
         script.onerror = () => reject(new Error("Failed to load Stacks SDK."));
       });
+
       return true;
     } catch (err) {
       window.IMPERIUM_LOG(`[SDK] ❌ Error loading SDK: ${err.message}`);
@@ -58,14 +58,14 @@ window.IMPERIUM_PayFee = {};
       if (stxAccount?.address) {
         window.STXAddress = stxAccount.address;
 
-        // --- Update LED and Text ---
+        // --- Update LED and Address ---
         const led = document.getElementById("wallet-led");
-        const txt = document.getElementById("wallet-text");
-        if (led && txt) {
+        const addr = document.getElementById("wallet-address");
+        if (led && addr) {
           led.style.backgroundColor = "#33ff66";
           led.style.boxShadow = "0 0 10px #33ff66";
-          txt.style.color = "#33ff66";
-          txt.innerHTML = `Wallet: connected<br>${stxAccount.address}`;
+          addr.style.color = "#f1f1f1";
+          addr.innerHTML = stxAccount.address;
         }
 
         window.IMPERIUM_LOG(`[Connection] ✅ Wallet connected: ${stxAccount.address}`);
@@ -157,7 +157,7 @@ window.IMPERIUM_PayFee = {};
       window.IMPERIUM_LOG("[PayFee] 🟢 Notarize button ready.");
     }
 
-    window.IMPERIUM_LOG("[Imperium] 🚀 Imperium Notary v1.8 initialized.");
+    window.IMPERIUM_LOG("[Imperium] 🚀 Imperium Notary v1.9 initialized.");
   }
 
   window.IMPERIUM_PayFee.init = init;
