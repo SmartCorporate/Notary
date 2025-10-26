@@ -1,13 +1,12 @@
-// payfee.js — v1.9 (Stable SDK Loader)
+// payfee.js — v1.10 Stable SDK Loader (Squarespace-compatible)
 
 window.IMPERIUM_PayFee = {};
 
 (function () {
-  //---------------------------------------------------------------------------  
-  // 🧩 Load Stacks SDK (robust + version fallback)
+  //---------------------------------------------------------------------------
+  // 🧩 Load Stacks SDK (robust + Squarespace-compatible)
   //---------------------------------------------------------------------------
   async function loadStacksSDK() {
-    // already loaded?
     if (typeof window.openSTXTransfer === "function") {
       window.IMPERIUM_LOG("[SDK] ✅ Already loaded.");
       return true;
@@ -17,26 +16,33 @@ window.IMPERIUM_PayFee = {};
 
     try {
       const script = document.createElement("script");
-      script.src = "https://cdn.jsdelivr.net/npm/@stacks/connect@latest/dist/connect.umd.js";
+      script.src = "https://unpkg.com/@stacks/connect@2.0.1/dist/index.umd.js";
       script.async = true;
+      script.crossOrigin = "anonymous";
       document.head.appendChild(script);
 
       await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => reject(new Error("Timeout: SDK did not load.")), 8000);
+
         script.onload = () => {
-          // check variants (different releases expose different names)
+          clearTimeout(timeout);
           if (typeof window.openSTXTransfer === "function") {
             resolve();
-          } else if (window.StacksConnect && typeof window.StacksConnect.openSTXTransfer === "function") {
+          } else if (window.StacksConnect?.openSTXTransfer) {
             window.openSTXTransfer = window.StacksConnect.openSTXTransfer;
             resolve();
-          } else if (window.connect && typeof window.connect.openSTXTransfer === "function") {
+          } else if (window.connect?.openSTXTransfer) {
             window.openSTXTransfer = window.connect.openSTXTransfer;
             resolve();
           } else {
-            reject(new Error("Stacks SDK loaded but no openSTXTransfer function found."));
+            reject(new Error("Stacks SDK loaded but openSTXTransfer not found."));
           }
         };
-        script.onerror = () => reject(new Error("Failed to load Stacks SDK script."));
+
+        script.onerror = () => {
+          clearTimeout(timeout);
+          reject(new Error("Failed to load Stacks SDK (network/CSP)."));
+        };
       });
 
       window.IMPERIUM_LOG("[SDK] ✅ Stacks SDK ready.");
@@ -47,8 +53,8 @@ window.IMPERIUM_PayFee = {};
     }
   }
 
-  //---------------------------------------------------------------------------  
-  // 💸 Transaction logic (identical, no changes)
+  //---------------------------------------------------------------------------
+  // 💸 Transaction process
   //---------------------------------------------------------------------------
   async function sendFee() {
     try {
@@ -109,8 +115,8 @@ window.IMPERIUM_PayFee = {};
     }
   }
 
-  //---------------------------------------------------------------------------  
-  // 🧠 Init (unchanged)
+  //---------------------------------------------------------------------------
+  // 🧠 Init
   //---------------------------------------------------------------------------
   function init() {
     const btnPay = document.getElementById("btn-notarize");
@@ -118,7 +124,8 @@ window.IMPERIUM_PayFee = {};
       btnPay.addEventListener("click", sendFee);
       window.IMPERIUM_LOG("[PayFee] 🟢 Notarize button ready.");
     }
-    window.IMPERIUM_LOG("[Imperium] 🚀 Imperium Notary v1.9 initialized.");
+
+    window.IMPERIUM_LOG("[Imperium] 🚀 Imperium Notary v1.10 initialized.");
   }
 
   window.IMPERIUM_PayFee.init = init;
