@@ -9,10 +9,11 @@
   <link rel="stylesheet" href="style.css" />
 
   <!-- Librerie Stacks.js necessarie per le transazioni STX -->
-  <script src="https://cdn.jsdelivr.net/npm/@stacks/transactions/dist/transactions.umd.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@stacks/network/dist/network.umd.js"></script>
-  <!-- Stacks SDK (required for openSTXTransfer and network ops) -->
-  <script src="https://unpkg.com/@stacks/connect@latest/dist/connect.min.js"></script>
+  <!-- ✅ Correct, unified Stacks SDK bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/@stacks/connect@7.1.0/dist/connect.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@stacks/transactions@6.9.0/dist/transactions.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@stacks/network@6.9.0/dist/network.umd.js"></script>
+
 </head>
 
 <body>
