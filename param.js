@@ -1,11 +1,11 @@
-// param.js — v1.11 Imperium Notary UI (clean LED, no ghost symbols)
+// param.js — v1.12 Imperium Notary UI (clean LED, working log, manual connect only)
 
 window.IMPERIUM_PARAM = {
   version: "1.0.0",
-  ironpoolAddress: "SP26SDBSG7TJTQA10XY5WAHVCP4FV0750VKFK134M",
-  feeSTX: 1.0,
-  feeMemo: "Imperium Notary Fee",
-  network: "mainnet",
+  ironpoolAddress: "SP26SDBSG7TJTQA10XY5WAHVCP4FV0750VKFK134M", // Mainnet pool address
+  feeSTX: 1.0, // Default fee amount
+  feeMemo: "Imperium Notary Fee", // Memo for transactions
+  network: "mainnet", // Default mode
 };
 
 // ---- Logging System ----
@@ -16,38 +16,24 @@ window.IMPERIUM_LOG = function (msg) {
   console.log(line);
 
   if (logBox) {
-    const lines = logBox.value ? logBox.value.split("\n") : [];
-    lines.push(line);
-    if (lines.length > 50) lines.splice(0, lines.length - 50);
-    logBox.value = lines.join("\n");
+    // Append message, keep only last 50
+    const current = logBox.textContent.trim().split("\n");
+    current.push(line);
+    if (current.length > 50) current.splice(0, current.length - 50);
+    logBox.textContent = current.join("\n");
+
+    // Auto-scroll to bottom
     logBox.scrollTop = logBox.scrollHeight;
   }
 };
 
 // ---- UI Initialization ----
 window.addEventListener("load", () => {
+  // Ensure LED starts red but with no text drawn
   const walletEl = document.getElementById("wallet-status");
   if (walletEl) {
-    walletEl.innerHTML = `
-      <div style="
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        font-family: monospace;
-        font-size: 0.95rem;
-      ">
-        <span id="wallet-led" style="
-          width: 12px;
-          height: 12px;
-          border-radius: 50%;
-          background-color: #ff3333;
-          box-shadow: 0 0 8px #ff3333;
-          display: inline-block;
-        "></span>
-        <span id="wallet-address" style="color:#f1f1f1; display:inline-block;"></span>
-      </div>
-    `;
+    walletEl.classList.remove("green");
+    walletEl.classList.add("red");
   }
 
   window.IMPERIUM_LOG("[Imperium] ⚙️ System parameters loaded (Mainnet mode).");
