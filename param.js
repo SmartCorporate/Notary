@@ -1,4 +1,4 @@
-// param.js — v1.9 Imperium Notary UI
+// param.js — v1.10 Imperium Notary UI (clean version)
 
 window.IMPERIUM_PARAM = {
   version: "1.0.0",
@@ -44,9 +44,7 @@ window.addEventListener("load", () => {
           background-color: #ff3333;
           box-shadow: 0 0 8px #ff3333;
         "></span>
-        <span id="wallet-address" style="color:#ff5555;">
-          — Wallet Not Connected —
-        </span>
+        <span id="wallet-address" style="color:#f1f1f1;"></span>
       </div>
     `;
   }
