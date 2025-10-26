@@ -8,14 +8,46 @@
   <!-- Stile principale -->
   <link rel="stylesheet" href="style.css" />
 
-  <!-- ✅ Corrected and verified Stacks SDK loader -->
-  <script 
-    async
-    src="https://cdn.jsdelivr.net/npm/@stacks/connect@7.1.0/dist/connect.umd.js"
-    onload="console.log('✅ Stacks SDK loaded successfully'); window.STACKS_SDK_LOADED=true;"
-    onerror="console.error('❌ Failed to load Stacks SDK'); window.STACKS_SDK_LOADED=false;">
+  <!-- ✅ Dual-CDN Stacks SDK loader (robusto e con fallback) -->
+  <script>
+    (function() {
+      function loadStacksSDK() {
+        const script = document.createElement("script");
+        script.src = "https://cdn.jsdelivr.net/npm/@stacks/connect@7.1.0/dist/connect.umd.js";
+        script.async = true;
+
+        script.onload = () => {
+          console.log("✅ Stacks SDK loaded successfully from jsDelivr");
+          window.STACKS_SDK_LOADED = true;
+          window.dispatchEvent(new Event("stacks-sdk-ready"));
+        };
+
+        script.onerror = () => {
+          console.warn("⚠️ jsDelivr failed — trying unpkg fallback...");
+          const fallback = document.createElement("script");
+          fallback.src = "https://unpkg.com/@stacks/connect@7.1.0/dist/connect.umd.js";
+          fallback.async = true;
+          fallback.onload = () => {
+            console.log("✅ Stacks SDK loaded successfully from unpkg");
+            window.STACKS_SDK_LOADED = true;
+            window.dispatchEvent(new Event("stacks-sdk-ready"));
+          };
+          fallback.onerror = () => {
+            console.error("❌ Failed to load Stacks SDK from both sources.");
+            window.STACKS_SDK_LOADED = false;
+          };
+          document.head.appendChild(fallback);
+        };
+
+        document.head.appendChild(script);
+      }
+
+      window.STACKS_SDK_LOADED = false;
+      loadStacksSDK();
+    })();
   </script>
 
+  <!-- Base libraries -->
   <script src="https://cdn.jsdelivr.net/npm/@stacks/transactions@6.9.0/dist/transactions.umd.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@stacks/network@6.9.0/dist/network.umd.js"></script>
 </head>
@@ -23,17 +55,18 @@
 <body>
   <div id="app">
 
-    <!-- 🔹 Pannello connessione wallet -->
+    <!-- 🔹 Wallet Panel -->
     <div id="wallet-panel" class="card">
       <div class="wallet-header">
-        <span id="wallet-status" class="led red"></span>
+        <!-- LED connection indicator -->
+        <span id="wallet-led" class="led red"></span>
         <span id="wallet-text">Wallet: disconnected</span>
         <button id="connect-btn" class="btn">Connect Wallet</button>
         <button id="disconnect-btn" class="btn hidden">Disconnect</button>
       </div>
     </div>
 
-    <!-- 🔹 Card principale -->
+    <!-- 🔹 Main Card -->
     <div id="main-card" class="card">
       <h1>IMPERIUM NOTARY</h1>
       <p class="subtext">⚠️ Under Development — Secured by Bitcoin Blockchain</p>
@@ -58,27 +91,35 @@
         <pre id="event-log">Event Log / Debug</pre>
       </div>
     </div>
-
   </div>
 
-  <!-- 🔹 Script principali -->
+  <!-- 🔹 Core scripts -->
   <script src="main.js"></script>
   <script src="connection.js"></script>
   <script src="param.js"></script>
   <script src="payfee.js"></script>
 
-  <!-- 🔹 Inizializzazione -->
+  <!-- 🔹 App initialization -->
   <script>
     window.addEventListener("load", () => {
       if (window.IMPERIUM_PayFee && window.IMPERIUM_PayFee.init) {
         window.IMPERIUM_PayFee.init();
 
-        // Aggiorna la fee mostrata nell’interfaccia
         const feeDisplay = document.getElementById("fee-amount");
         if (window.IMPERIUM_PARAM && feeDisplay) {
           feeDisplay.textContent = `${window.IMPERIUM_PARAM.feeSTX.toFixed(2)} STX`;
         }
       }
+
+      // Listen for SDK load confirmation
+      window.addEventListener("stacks-sdk-ready", () => {
+        const led = document.getElementById("wallet-led");
+        if (led) {
+          led.classList.remove("red");
+          led.classList.add("green");
+        }
+        console.log("💡 [SDK] Stacks SDK fully initialized");
+      });
     });
   </script>
 
