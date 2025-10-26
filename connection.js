@@ -42,7 +42,9 @@ window.IMPERIUM_Connection = {};
 
       walletText.textContent = `Connected: ${stxAddr}`;
       walletLed.classList.remove("red");
+      window.IMPERIUM_LED.setDisconnected();
       walletLed.classList.add("green");
+      window.IMPERIUM_LED.setConnected();
       connectBtn.classList.add("hidden");
       disconnectBtn.classList.remove("hidden");
 

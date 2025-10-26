@@ -1,4 +1,4 @@
-// param.js — v1.12 Imperium Notary UI (clean LED, working log, manual connect only)
+// param.js — v1.13 Imperium Notary UI (LED rosso ↔ verde)
 
 window.IMPERIUM_PARAM = {
   version: "1.0.0",
@@ -16,20 +16,16 @@ window.IMPERIUM_LOG = function (msg) {
   console.log(line);
 
   if (logBox) {
-    // Append message, keep only last 50
     const current = logBox.textContent.trim().split("\n");
     current.push(line);
     if (current.length > 50) current.splice(0, current.length - 50);
     logBox.textContent = current.join("\n");
-
-    // Auto-scroll to bottom
     logBox.scrollTop = logBox.scrollHeight;
   }
 };
 
 // ---- UI Initialization ----
 window.addEventListener("load", () => {
-  // Ensure LED starts red but with no text drawn
   const walletEl = document.getElementById("wallet-status");
   if (walletEl) {
     walletEl.classList.remove("green");
@@ -39,3 +35,22 @@ window.addEventListener("load", () => {
   window.IMPERIUM_LOG("[Imperium] ⚙️ System parameters loaded (Mainnet mode).");
   window.IMPERIUM_LOG("[Imperium] Ready for manual wallet connection.");
 });
+
+// ---- LED Connection Functions ----
+window.IMPERIUM_LED = {
+  setConnected: function () {
+    const walletLed = document.getElementById("wallet-status");
+    if (walletLed) {
+      walletLed.classList.remove("red");
+      walletLed.classList.add("green");
+    }
+  },
+
+  setDisconnected: function () {
+    const walletLed = document.getElementById("wallet-status");
+    if (walletLed) {
+      walletLed.classList.remove("green");
+      walletLed.classList.add("red");
+    }
+  }
+};
