@@ -1,64 +1,59 @@
-// payfee.js — Handles STX fee payment through Leather Wallet (Testnet & Mainnet compatible)
-// Fixed: uses static Stacks network objects (no "constructor" error)
+// payfee.js — Stable version with automatic Leather network detection
+// Works for both TESTNET and MAINNET and logs real connection details.
 
 window.IMPERIUM_PayFee = {};
 
 (function () {
   async function sendFee() {
     try {
-      window.IMPERIUM_LOG("[PayFee] 🔸 Transaction process started...");
+      window.IMPERIUM_LOG("[PayFee] 🔸 Starting transaction process...");
 
-      // --- Load parameters ---
       const params = window.IMPERIUM_PARAM || {};
       const recipient = params.ironpoolAddress || "ST26SDBSG7TJTQA10XY5WAHVCP4FV0750VKFK134M";
       const feeSTX = params.feeSTX || 5.0;
-      const networkType = params.network?.toLowerCase() || "testnet";
+      const memo = params.feeMemo || "Imperium Notary Fee";
 
-      // --- Verify wallet connection ---
+      // --- Wallet address check ---
       const senderAddress = window.STXAddress;
-      if (!senderAddress || !senderAddress.startsWith("ST")) {
+      if (!senderAddress || !senderAddress.startsWith("S")) {
         alert("⚠️ No STX address detected. Please connect your wallet first.");
-        window.IMPERIUM_LOG("[PayFee] ⚠️ STX address not found — check connection.js global variable.");
+        window.IMPERIUM_LOG("[PayFee] ⚠️ Missing or invalid STX address.");
         return;
       }
 
-      // --- Select network (static objects, not constructors) ---
-      let network;
-      if (networkType === "mainnet") {
-        network = window.StacksMainnet || { version: "mainnet" };
-        window.IMPERIUM_LOG("[PayFee] 🌍 Network selected: MAINNET.");
-      } else {
-        network = window.StacksTestnet || { version: "testnet" };
-        window.IMPERIUM_LOG("[PayFee] 🧪 Network selected: TESTNET.");
-      }
-
-      // --- Convert fee to microSTX ---
-      const amountMicroSTX = Math.floor(feeSTX * 1_000_000);
-
-      // --- Get provider from Leather Wallet ---
+      // --- Access provider ---
       const provider = window.LeatherProvider || window.btc;
       if (!provider || !provider.request) {
         alert("⚠️ Leather Wallet provider not found. Please unlock and retry.");
-        window.IMPERIUM_LOG("[PayFee] ⚠️ Leather provider not available or not injected.");
+        window.IMPERIUM_LOG("[PayFee] ⚠️ Leather Wallet provider unavailable.");
         return;
       }
 
-      // --- Transaction request object ---
+      // --- Detect active network directly from wallet ---
+      const addressesResp = await provider.request("getAddresses");
+      const stxAccount = addressesResp?.result?.addresses?.find(a => a.symbol === "STX");
+      const walletNetwork = stxAccount?.network?.includes("mainnet") ? "mainnet" : "testnet";
+
+      window.IMPERIUM_LOG(`[PayFee] 🌐 Detected network from wallet: ${walletNetwork.toUpperCase()}`);
+      window.IMPERIUM_LOG(`[PayFee] 💼 Active STX address: ${stxAccount?.address}`);
+
+      // --- Prepare transaction ---
+      const amountMicroSTX = Math.floor(feeSTX * 1_000_000);
       const txOptions = {
         recipient,
         amount: amountMicroSTX,
-        network,
-        memo: params.feeMemo || "Imperium Notary Fee",
-        anchorMode: window.AnchorMode?.Any || 3,
+        memo,
+        network: walletNetwork,
+        anchorMode: 3, // Any
       };
 
-      window.IMPERIUM_LOG(`[PayFee] 💰 Preparing ${feeSTX} STX transfer from ${senderAddress} → ${recipient}`);
+      window.IMPERIUM_LOG(`[PayFee] 💰 Preparing ${feeSTX} STX transfer to ${recipient} on ${walletNetwork.toUpperCase()}`);
       const response = await provider.request("stx_transfer", txOptions);
 
       // --- Handle response ---
       if (response && response.txId) {
         const explorerUrl =
-          networkType === "mainnet"
+          walletNetwork === "mainnet"
             ? `https://explorer.stacks.co/txid/${response.txId}`
             : `https://explorer.stacks.co/txid/${response.txId}?chain=testnet`;
 
@@ -66,13 +61,13 @@ window.IMPERIUM_PayFee = {};
         window.IMPERIUM_LOG(`[PayFee] 🔗 Explorer: ${explorerUrl}`);
         alert(`✅ Transaction broadcasted!\nTXID: ${response.txId}`);
       } else {
-        alert("⚠️ Transaction canceled or rejected by the user.");
+        alert("⚠️ Transaction canceled or rejected by user.");
         window.IMPERIUM_LOG("[PayFee] ⚠️ Transaction canceled or rejected.");
       }
     } catch (err) {
       console.error(err);
-      window.IMPERIUM_LOG(`[PayFee] ❌ Transaction error: ${err.message}`);
-      alert(`❌ Transaction Error:\n${err.message}`);
+      window.IMPERIUM_LOG(`[PayFee] ❌ Transaction error: ${err?.message || "undefined"}`);
+      alert(`❌ Transaction Error:\n${err?.message || "undefined"}`);
     }
   }
 
