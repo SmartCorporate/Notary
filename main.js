@@ -1,4 +1,4 @@
-//26 Oct 2025 13.35 GRAFICA e CONNESSIONE ok, anche con log sotto e led tutto su MAINET manca SDK
+//26 Oct 2025 14.43 GRAFICA e CONNESSIONE ok, anche con log sotto e led tutto su MAINET manca firma corretta 
 // --- IMPERIUM NOTARY MAIN SCRIPT v0.1 ---
 window.IMPERIUM_LOG = function (msg) {
   const logBox = document.getElementById("event-log");

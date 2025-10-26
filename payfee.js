@@ -1,5 +1,6 @@
 // payfee.js — v2.00 Imperium Notary
 // Robust Leather/OpenSTX transfer with supported-method detection, recentBlockHash fallback and improved logging.
+//26 Oct 2025 14.43 GRAFICA e CONNESSIONE ok, anche con log sotto e led tutto su MAINET manca firma corretta 
 
 window.IMPERIUM_PayFee = {};
 
