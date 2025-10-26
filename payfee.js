@@ -1,32 +1,37 @@
-// payfee.js — Mainnet Clean Edition (v1.4)
-// Stable + Manual Connect + Limited Log + SDK Fallback
-// Compatible with Leather Wallet (Stacks v2.x)
+// payfee.js — Final Controlled Edition (v1.5)
+// Manual connect only + stable SDK + autoscroll log
+// MAINNET only – Leather Wallet compatible
 
 window.IMPERIUM_PayFee = {};
 
 (function () {
   //---------------------------------------------------------------------------
-  // 🧩 Load Stacks SDK dynamically if not already present
+  // 🧩 Load Stacks SDK dynamically only when needed
   //---------------------------------------------------------------------------
   async function loadStacksSDK() {
     if (window.openSTXTransfer) {
       window.IMPERIUM_LOG("[SDK] ✅ Stacks SDK already loaded.");
       return true;
     }
+
     window.IMPERIUM_LOG("[SDK] ⏳ Loading Stacks SDK...");
     try {
       const script = document.createElement("script");
-      script.src = "https://unpkg.com/@stacks/connect@latest/dist/connect.min.js";
+      // ✅ CDN verified working version
+      script.src = "https://cdn.jsdelivr.net/npm/@stacks/connect@latest/dist/index.umd.js";
       script.async = true;
       document.head.appendChild(script);
 
       await new Promise((resolve, reject) => {
         script.onload = () => {
-          window.IMPERIUM_LOG("[SDK] ✅ Stacks SDK loaded successfully.");
-          resolve();
+          if (window.openSTXTransfer) {
+            window.IMPERIUM_LOG("[SDK] ✅ Stacks SDK loaded successfully.");
+            resolve();
+          } else {
+            reject(new Error("openSTXTransfer not found after load."));
+          }
         };
-        script.onerror = () =>
-          reject(new Error("Failed to load Stacks SDK script."));
+        script.onerror = () => reject(new Error("Failed to load Stacks SDK script."));
       });
       return true;
     } catch (err) {
@@ -36,42 +41,43 @@ window.IMPERIUM_PayFee = {};
   }
 
   //---------------------------------------------------------------------------
-  // 🔗 Connect Leather Wallet manually
+  // 🔗 Manual Leather Wallet connection
   //---------------------------------------------------------------------------
   async function connectWallet() {
     try {
       const provider = window.LeatherProvider || window.btc;
       if (!provider || !provider.request) {
-        alert("⚠️ Leather Wallet provider not found. Please open or unlock it.");
+        alert("⚠️ Leather Wallet not detected. Please unlock or open it first.");
         window.IMPERIUM_LOG("[Connection] ❌ Leather provider unavailable.");
         return;
       }
 
-      window.IMPERIUM_LOG("[Connection] 🔌 Initializing Leather Wallet...");
+      window.IMPERIUM_LOG("[Connection] 🔌 Waiting for user approval...");
       const resp = await provider.request("getAddresses");
-      const stxAccount = resp?.result?.addresses?.find(a => a.symbol === "STX");
+      const stxAccount = resp?.result?.addresses?.find((a) => a.symbol === "STX");
 
       if (stxAccount?.address) {
         window.STXAddress = stxAccount.address;
         window.IMPERIUM_PARAM.network = "mainnet";
 
         const el = document.getElementById("wallet-status");
-        if (el) el.innerHTML = `Connected: <b>${stxAccount.address}</b>`;
+        if (el) {
+          el.innerHTML = `Connected: <b>${stxAccount.address}</b>`;
+          el.style.color = "#3cff6c"; // green indicator
+        }
 
-        window.IMPERIUM_LOG(
-          `[Connection] ✅ Wallet connected: ${stxAccount.address}`
-        );
+        window.IMPERIUM_LOG(`[Connection] ✅ Wallet connected: ${stxAccount.address}`);
       } else {
-        alert("⚠️ No STX account detected in Leather Wallet.");
+        alert("⚠️ No STX account detected.");
         window.IMPERIUM_LOG("[Connection] ⚠️ No STX account found.");
       }
     } catch (err) {
-      window.IMPERIUM_LOG(`[Connection] ❌ Wallet connection failed: ${err.message}`);
+      window.IMPERIUM_LOG(`[Connection] ❌ Connection failed: ${err.message}`);
     }
   }
 
   //---------------------------------------------------------------------------
-  // 💸 Send notarization fee transaction
+  // 💸 Send notarization fee transaction (manual trigger)
   //---------------------------------------------------------------------------
   async function sendFee() {
     try {
@@ -86,15 +92,15 @@ window.IMPERIUM_PayFee = {};
       const senderAddress = window.STXAddress;
       if (!senderAddress || !senderAddress.startsWith("SP")) {
         alert("⚠️ Please connect your MAINNET Leather wallet first.");
-        window.IMPERIUM_LOG("[PayFee] ⚠️ Invalid or missing mainnet address.");
+        window.IMPERIUM_LOG("[PayFee] ⚠️ No wallet connected.");
         return;
       }
 
       // --- Fetch balance ---
       const apiBase = "https://api.hiro.so";
       window.IMPERIUM_LOG(`[PayFee] 🌍 Using Hiro API endpoint: ${apiBase}`);
-      let stxBalance = 0;
 
+      let stxBalance = 0;
       try {
         const resp = await fetch(
           `${apiBase}/extended/v1/address/${senderAddress}/balances`,
@@ -117,20 +123,19 @@ window.IMPERIUM_PayFee = {};
             3
           )} STX but need ${feeSTX}.`
         );
-        window.IMPERIUM_LOG("[PayFee] ❌ Insufficient balance for transaction.");
+        window.IMPERIUM_LOG("[PayFee] ❌ Not enough balance for transaction.");
         return;
       }
 
-      // --- Ensure SDK loaded ---
-      await loadStacksSDK();
-      const { openSTXTransfer } = window;
-      if (!openSTXTransfer) {
-        alert("❌ Missing Stacks SDK in page context.");
-        window.IMPERIUM_LOG("[PayFee] ❌ openSTXTransfer not loaded.");
+      // --- Load SDK before sending ---
+      const sdkLoaded = await loadStacksSDK();
+      if (!sdkLoaded || !window.openSTXTransfer) {
+        alert("❌ Stacks SDK not loaded correctly.");
+        window.IMPERIUM_LOG("[PayFee] ❌ openSTXTransfer unavailable.");
         return;
       }
 
-      // --- Execute transaction ---
+      // --- Build transaction ---
       const txOptions = {
         recipient,
         amount: (feeSTX * 1_000_000).toString(),
@@ -150,7 +155,7 @@ window.IMPERIUM_PayFee = {};
       window.IMPERIUM_LOG(
         `[PayFee] 🚀 Sending ${feeSTX} STX from ${senderAddress} → ${recipient}`
       );
-      await openSTXTransfer(txOptions);
+      await window.openSTXTransfer(txOptions);
     } catch (err) {
       const msg = err?.message || "unknown error";
       window.IMPERIUM_LOG(`[PayFee] ❌ Transaction error: ${msg}`);
@@ -159,43 +164,38 @@ window.IMPERIUM_PayFee = {};
   }
 
   //---------------------------------------------------------------------------
-  // 🧠 Initialization + Smart Log Limiter
+  // 🧠 Initialization + Smart Log Scroll
   //---------------------------------------------------------------------------
   function init() {
-    // Button: Notarize
+    // Notarize button
     const btnPay = document.getElementById("btn-notarize");
     if (btnPay) {
       btnPay.addEventListener("click", sendFee);
-      window.IMPERIUM_LOG("[PayFee] 🟢 Button listener attached successfully.");
+      window.IMPERIUM_LOG("[PayFee] 🟢 Notarize button ready.");
     }
 
-    // Button: Connect Wallet (manual)
+    // Connect button
     const btnConn = document.getElementById("btn-connect");
-    if (btnConn) btnConn.addEventListener("click", connectWallet);
+    if (btnConn) {
+      btnConn.addEventListener("click", connectWallet);
+      window.IMPERIUM_LOG("[Connection] 🟡 Connect button active.");
+    }
 
-    // Log override with auto-scroll + limiter (max 30 lines)
+    // Enhanced logging with autoscroll and limiter
     const origLog = window.IMPERIUM_LOG;
     window.IMPERIUM_LOG = function (msg) {
       const logBox = document.getElementById("event-log");
       const time = new Date().toLocaleTimeString();
-      const line = `[${time}] ${msg}\n`;
+      const line = `[${time}] ${msg}`;
 
       if (logBox) {
-        let current = logBox.tagName === "TEXTAREA"
-          ? logBox.value.split("\n")
-          : logBox.innerText.split("\n");
-        current.push(line.trim());
-        if (current.length > 30) current = current.slice(-30); // keep last 30
-        const newText = current.join("\n");
-
-        if (logBox.tagName === "TEXTAREA") {
-          logBox.value = newText;
-          logBox.scrollTop = logBox.scrollHeight;
-        } else {
-          logBox.innerText = newText;
-          logBox.scrollTop = logBox.scrollHeight;
-        }
+        const lines = logBox.value ? logBox.value.split("\n") : [];
+        lines.push(line);
+        if (lines.length > 25) lines.splice(0, lines.length - 25);
+        logBox.value = lines.join("\n");
+        logBox.scrollTop = logBox.scrollHeight;
       }
+
       console.log(line);
     };
   }
