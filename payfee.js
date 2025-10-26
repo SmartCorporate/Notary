@@ -1,11 +1,11 @@
-// payfee.js — v1.7 (Imperium Standard)
-// Manual connect + improved LED + full log + stable SDK
+// payfee.js — v1.8 Imperium Notary
+// Manual connect + visible log + stable SDK + proper colors
 
 window.IMPERIUM_PayFee = {};
 
 (function () {
   //---------------------------------------------------------------------------
-  // 🧩 Load Stacks SDK only when needed
+  // 🧩 Load Stacks SDK (stable version)
   //---------------------------------------------------------------------------
   async function loadStacksSDK() {
     if (window.openSTXTransfer) {
@@ -16,7 +16,8 @@ window.IMPERIUM_PayFee = {};
     window.IMPERIUM_LOG("[SDK] ⏳ Loading Stacks SDK...");
     try {
       const script = document.createElement("script");
-      script.src = "https://cdn.jsdelivr.net/npm/@stacks/connect@2.7.0/dist/index.umd.js";
+      script.src =
+        "https://cdn.jsdelivr.net/npm/@stacks/connect@2.0.1/dist/index.umd.js";
       script.async = true;
       document.head.appendChild(script);
 
@@ -25,13 +26,15 @@ window.IMPERIUM_PayFee = {};
           if (window.openSTXTransfer) {
             window.IMPERIUM_LOG("[SDK] ✅ Stacks SDK ready.");
             resolve();
-          } else reject(new Error("openSTXTransfer not found."));
+          } else {
+            reject(new Error("openSTXTransfer not found after load."));
+          }
         };
         script.onerror = () => reject(new Error("Failed to load Stacks SDK."));
       });
       return true;
     } catch (err) {
-      window.IMPERIUM_LOG(`[SDK] ❌ Error: ${err.message}`);
+      window.IMPERIUM_LOG(`[SDK] ❌ Error loading SDK: ${err.message}`);
       return false;
     }
   }
@@ -43,7 +46,7 @@ window.IMPERIUM_PayFee = {};
     try {
       const provider = window.LeatherProvider || window.btc;
       if (!provider || !provider.request) {
-        alert("⚠️ Leather Wallet not detected. Please unlock or open it first.");
+        alert("⚠️ Leather Wallet not detected. Please open it first.");
         window.IMPERIUM_LOG("[Connection] ❌ Leather provider unavailable.");
         return;
       }
@@ -55,14 +58,14 @@ window.IMPERIUM_PayFee = {};
       if (stxAccount?.address) {
         window.STXAddress = stxAccount.address;
 
-        // --- Update UI LED ---
+        // --- Update LED and Text ---
         const led = document.getElementById("wallet-led");
         const txt = document.getElementById("wallet-text");
         if (led && txt) {
           led.style.backgroundColor = "#33ff66";
-          led.style.boxShadow = "0 0 8px #33ff66";
+          led.style.boxShadow = "0 0 10px #33ff66";
           txt.style.color = "#33ff66";
-          txt.innerHTML = `Wallet: connected (${stxAccount.address})`;
+          txt.innerHTML = `Wallet: connected<br>${stxAccount.address}`;
         }
 
         window.IMPERIUM_LOG(`[Connection] ✅ Wallet connected: ${stxAccount.address}`);
@@ -153,6 +156,8 @@ window.IMPERIUM_PayFee = {};
       btnPay.addEventListener("click", sendFee);
       window.IMPERIUM_LOG("[PayFee] 🟢 Notarize button ready.");
     }
+
+    window.IMPERIUM_LOG("[Imperium] 🚀 Imperium Notary v1.8 initialized.");
   }
 
   window.IMPERIUM_PayFee.init = init;
