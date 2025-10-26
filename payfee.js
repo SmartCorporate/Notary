@@ -1,3 +1,4 @@
+//26 Oct 2025 13.35 GRAFICA e CONNESSIONE ok, anche con log sotto e led tutto su MAINET manca SDK
 // payfee.js — v1.8 Imperium Notary
 // Manual connect + visible log + stable SDK + proper colors
 

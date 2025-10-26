@@ -1,3 +1,4 @@
+//26 Oct 2025 13.35 GRAFICA e CONNESSIONE ok, anche con log sotto e led tutto su MAINET manca SDK
 // connection.js
 // Exclusive connection to Stacks (STX) via Leather Wallet
 

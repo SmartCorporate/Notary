@@ -1,3 +1,4 @@
+//26 Oct 2025 13.35 GRAFICA e CONNESSIONE ok, anche con log sotto e led tutto su MAINET manca SDK
 // param.js — v1.14 Imperium Notary UI (stable LED handling)
 
 window.IMPERIUM_PARAM = {
