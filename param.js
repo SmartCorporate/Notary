@@ -1,4 +1,4 @@
-// param.js — v1.10 Imperium Notary UI (clean version)
+// param.js — v1.11 Imperium Notary UI (clean LED, no ghost symbols)
 
 window.IMPERIUM_PARAM = {
   version: "1.0.0",
@@ -43,8 +43,9 @@ window.addEventListener("load", () => {
           border-radius: 50%;
           background-color: #ff3333;
           box-shadow: 0 0 8px #ff3333;
+          display: inline-block;
         "></span>
-        <span id="wallet-address" style="color:#f1f1f1;"></span>
+        <span id="wallet-address" style="color:#f1f1f1; display:inline-block;"></span>
       </div>
     `;
   }
