@@ -1,11 +1,11 @@
-// param.js — v1.13 Imperium Notary UI (LED rosso ↔ verde)
+// param.js — v1.14 Imperium Notary UI (stable LED handling)
 
 window.IMPERIUM_PARAM = {
   version: "1.0.0",
-  ironpoolAddress: "SP26SDBSG7TJTQA10XY5WAHVCP4FV0750VKFK134M", // Mainnet pool address
-  feeSTX: 1.0, // Default fee amount
-  feeMemo: "Imperium Notary Fee", // Memo for transactions
-  network: "mainnet", // Default mode
+  ironpoolAddress: "SP26SDBSG7TJTQA10XY5WAHVCP4FV0750VKFK134M",
+  feeSTX: 1.0,
+  feeMemo: "Imperium Notary Fee",
+  network: "mainnet",
 };
 
 // ---- Logging System ----
@@ -16,12 +16,32 @@ window.IMPERIUM_LOG = function (msg) {
   console.log(line);
 
   if (logBox) {
-    const current = logBox.textContent.trim().split("\n");
-    current.push(line);
-    if (current.length > 50) current.splice(0, current.length - 50);
-    logBox.textContent = current.join("\n");
+    const lines = logBox.textContent.trim().split("\n");
+    lines.push(line);
+    if (lines.length > 50) lines.splice(0, lines.length - 50);
+    logBox.textContent = lines.join("\n");
     logBox.scrollTop = logBox.scrollHeight;
   }
+};
+
+// ---- LED Management ----
+window.IMPERIUM_LED = {
+  setConnected: function () {
+    const walletLed = document.getElementById("wallet-status");
+    if (walletLed) {
+      walletLed.classList.remove("red");
+      walletLed.classList.add("green");
+      window.IMPERIUM_LOG("🟢 [LED] Wallet connected (green).");
+    }
+  },
+  setDisconnected: function () {
+    const walletLed = document.getElementById("wallet-status");
+    if (walletLed) {
+      walletLed.classList.remove("green");
+      walletLed.classList.add("red");
+      window.IMPERIUM_LOG("🔴 [LED] Wallet disconnected (red).");
+    }
+  },
 };
 
 // ---- UI Initialization ----
@@ -35,22 +55,3 @@ window.addEventListener("load", () => {
   window.IMPERIUM_LOG("[Imperium] ⚙️ System parameters loaded (Mainnet mode).");
   window.IMPERIUM_LOG("[Imperium] Ready for manual wallet connection.");
 });
-
-// ---- LED Connection Functions ----
-window.IMPERIUM_LED = {
-  setConnected: function () {
-    const walletLed = document.getElementById("wallet-status");
-    if (walletLed) {
-      walletLed.classList.remove("red");
-      walletLed.classList.add("green");
-    }
-  },
-
-  setDisconnected: function () {
-    const walletLed = document.getElementById("wallet-status");
-    if (walletLed) {
-      walletLed.classList.remove("green");
-      walletLed.classList.add("red");
-    }
-  }
-};
