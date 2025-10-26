@@ -1,32 +1,35 @@
-// -------------------------------------------------------------
-// param.js — Global parameters for Imperium Notary
-// Contains both Testnet and Mainnet configurations.
-// -------------------------------------------------------------
+// param.js — Dynamic network detection for Imperium Notary
 
 window.IMPERIUM_PARAM = {
-  // 🧱 IronPool addresses
-  ironpoolAddressTestnet: "ST26SDBSG7TJTQA10XY5WAHVCP4FV0750VKFK134M",
-  ironpoolAddressMainnet: "SP26SDBSG7TJTQA10XY5WAHVCP4FV0750VH30XYB4",
-
-  // 💰 Default network configuration
-  network: "testnet", // "testnet" or "mainnet"
-
-  // 💵 Fee configuration
-  feeSTX: 5.0,
-  feeMemo: "Imperium Notary fee",
-
-  // 📌 Helper for payfee.js
-  get ironpoolAddress() {
-    return this.network === "mainnet"
-      ? this.ironpoolAddressMainnet
-      : this.ironpoolAddressTestnet;
-  }
+  ironpoolAddress_testnet: "ST26SDBSG7TJTQA10XY5WAHVCP4FV0750VKFK134M",
+  ironpoolAddress_mainnet: "SP26SDBSG7TJTQA10XY5WAHVCP4FV0750VH30XYB4",
+  feeSTX: 1.0,
+  feeMemo: "Imperium Notary Fee",
+  network: "auto",
 };
 
-// ✅ Console info
-console.log(
-  `🧭 Imperium Notary initialized for network: ${window.IMPERIUM_PARAM.network.toUpperCase()}`
-);
-console.log(
-  `💎 Active IronPool Address: ${window.IMPERIUM_PARAM.ironpoolAddress}`
-);
+// Automatically log the current environment
+(async () => {
+  try {
+    const provider = window.LeatherProvider || window.btc;
+    let walletNetwork = "testnet";
+
+    if (provider && provider.request) {
+      const response = await provider.request("getAddresses");
+      const stxAccount = response?.result?.addresses?.find(a => a.symbol === "STX");
+      if (stxAccount?.network?.includes("mainnet")) walletNetwork = "mainnet";
+    }
+
+    window.IMPERIUM_PARAM.network = walletNetwork;
+    const activeIronPool =
+      walletNetwork === "mainnet"
+        ? window.IMPERIUM_PARAM.ironpoolAddress_mainnet
+        : window.IMPERIUM_PARAM.ironpoolAddress_testnet;
+
+    window.IMPERIUM_PARAM.ironpoolAddress = activeIronPool;
+    console.log(`🕰️ Imperium Notary initialized for network: ${walletNetwork.toUpperCase()}`);
+    console.log(`💎 Active IronPool Address: ${activeIronPool}`);
+  } catch (err) {
+    console.error("Failed to detect wallet network:", err);
+  }
+})();
