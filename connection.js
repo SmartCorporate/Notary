@@ -49,6 +49,8 @@ window.IMPERIUM_Connection = {};
       // Save STX address globally
       window.IMPERIUM_Connection.currentAddress = stxAddr;
       window.IMPERIUM_LOG(`✅ [Connection] STX address connected: ${stxAddr}`);
+      window.STXAddress = stxAddr;
+      window.IMPERIUM_LOG(`[Connection] Global STXAddress variable updated.`);
 
     } catch (err) {
       console.error(err);
