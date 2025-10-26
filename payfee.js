@@ -1,4 +1,4 @@
-// payfee.js — Stable version with dynamic network + accurate STX balance
+// payfee.js — Stable version with dynamic network + dual API balance fetch + auto-scroll log
 // Fully compatible with Leather Wallet (Stacks v2.x)
 
 window.IMPERIUM_PayFee = {};
@@ -60,17 +60,38 @@ window.IMPERIUM_PayFee = {};
 
       window.IMPERIUM_LOG(`[PayFee] 🌍 Using Hiro API endpoint: ${apiBase}`);
 
-      // --- Fetch balance from Hiro API (v2) ---
-      const balanceResp = await fetch(`${apiBase}/v2/accounts/${activeAddress}`, {
-        cache: "no-cache",
-      });
-      const balanceData = await balanceResp.json();
-      const balanceRaw = balanceData.balance || "0";
-      const stxBalance = parseFloat(balanceRaw) / 1_000_000;
+      // --- Fetch balance (hybrid API) ---
+      let stxBalance = 0;
+      try {
+        // Try /v2/accounts first
+        const respV2 = await fetch(`${apiBase}/v2/accounts/${activeAddress}`, {
+          cache: "no-cache",
+        });
+        const dataV2 = await respV2.json();
 
-      window.IMPERIUM_LOG(
-        `[PayFee] 💰 Current STX balance: ${stxBalance.toFixed(6)} STX`
-      );
+        if (dataV2?.balance) {
+          stxBalance = parseFloat(dataV2.balance) / 1_000_000;
+        } else {
+          // fallback to extended
+          const respExt = await fetch(
+            `${apiBase}/extended/v1/address/${activeAddress}/balances`,
+            { cache: "no-cache" }
+          );
+          const dataExt = await respExt.json();
+          if (dataExt?.stx?.balance) {
+            stxBalance = parseFloat(dataExt.stx.balance) / 1_000_000;
+          }
+        }
+
+        window.IMPERIUM_LOG(
+          `[PayFee] 💰 Current STX balance: ${stxBalance.toFixed(6)} STX`
+        );
+      } catch (err) {
+        window.IMPERIUM_LOG(
+          `[PayFee] ❌ Balance fetch error: ${err.message}`
+        );
+        stxBalance = 0;
+      }
 
       if (stxBalance < feeSTX) {
         alert(
@@ -145,6 +166,25 @@ window.IMPERIUM_PayFee = {};
         "[PayFee] ⚠️ Button not found in DOM (btn-notarize)."
       );
     }
+
+    // --- Enhance log autoscroll ---
+    const origLog = window.IMPERIUM_LOG;
+    window.IMPERIUM_LOG = function (msg) {
+      const logBox = document.getElementById("event-log");
+      const time = new Date().toLocaleTimeString();
+      const line = `[${time}] ${msg}\n`;
+
+      if (logBox) {
+        if (logBox.tagName === "TEXTAREA") {
+          logBox.value += line;
+          logBox.scrollTop = logBox.scrollHeight;
+        } else {
+          logBox.innerHTML += `<div>${line}</div>`;
+          logBox.scrollTop = logBox.scrollHeight;
+        }
+      }
+      console.log(line);
+    };
   }
 
   window.IMPERIUM_PayFee.init = init;
