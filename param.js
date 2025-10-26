@@ -1,4 +1,4 @@
-// param.js — v1.13 Imperium Notary UI (clean full-green LED on connection)
+// param.js — v1.11 Imperium Notary UI (clean LED, no ghost symbols)
 
 window.IMPERIUM_PARAM = {
   version: "1.0.0",
@@ -8,6 +8,7 @@ window.IMPERIUM_PARAM = {
   network: "mainnet",
 };
 
+// ---- Logging System ----
 window.IMPERIUM_LOG = function (msg) {
   const logBox = document.getElementById("event-log");
   const time = new Date().toLocaleTimeString();
@@ -23,6 +24,7 @@ window.IMPERIUM_LOG = function (msg) {
   }
 };
 
+// ---- UI Initialization ----
 window.addEventListener("load", () => {
   const walletEl = document.getElementById("wallet-status");
   if (walletEl) {
@@ -36,13 +38,12 @@ window.addEventListener("load", () => {
         font-size: 0.95rem;
       ">
         <span id="wallet-led" style="
-          width: 14px;
-          height: 14px;
+          width: 12px;
+          height: 12px;
           border-radius: 50%;
           background-color: #ff3333;
-          box-shadow: 0 0 10px #ff3333;
+          box-shadow: 0 0 8px #ff3333;
           display: inline-block;
-          transition: all 0.3s ease;
         "></span>
         <span id="wallet-address" style="color:#f1f1f1; display:inline-block;"></span>
       </div>
@@ -52,27 +53,3 @@ window.addEventListener("load", () => {
   window.IMPERIUM_LOG("[Imperium] ⚙️ System parameters loaded (Mainnet mode).");
   window.IMPERIUM_LOG("[Imperium] Ready for manual wallet connection.");
 });
-
-window.IMPERIUM_LED = {
-  setConnected: function (address) {
-    const led = document.getElementById("wallet-led");
-    const addr = document.getElementById("wallet-address");
-    if (led) {
-      led.style.backgroundColor = "#00ff55";
-      led.style.boxShadow = "0 0 15px #00ff55";
-    }
-    if (addr) addr.textContent = address || "Connected";
-    window.IMPERIUM_LOG(`✅ [Connection] STX address connected: ${address}`);
-  },
-
-  setDisconnected: function () {
-    const led = document.getElementById("wallet-led");
-    const addr = document.getElementById("wallet-address");
-    if (led) {
-      led.style.backgroundColor = "#ff3333";
-      led.style.boxShadow = "0 0 10px #ff3333";
-    }
-    if (addr) addr.textContent = "";
-    window.IMPERIUM_LOG("🔌 [Connection] Wallet disconnected.");
-  },
-};
