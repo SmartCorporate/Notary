@@ -1,4 +1,4 @@
-// payfee.js — Stable version with automatic network detection and STX balance check
+// payfee.js — Stable version with dynamic network + accurate STX balance
 // Fully compatible with Leather Wallet (Stacks v2.x)
 
 window.IMPERIUM_PayFee = {};
@@ -9,7 +9,9 @@ window.IMPERIUM_PayFee = {};
       window.IMPERIUM_LOG("[PayFee] 🔸 Starting transaction process...");
 
       const params = window.IMPERIUM_PARAM || {};
-      const recipient = params.ironpoolAddress || "ST26SDBSG7TJTQA10XY5WAHVCP4FV0750VKFK134M";
+      const recipient =
+        params.ironpoolAddress ||
+        "ST26SDBSG7TJTQA10XY5WAHVCP4FV0750VKFK134M";
       const feeSTX = params.feeSTX || 5.0;
       const memo = params.feeMemo || "Imperium Notary Fee";
 
@@ -29,41 +31,68 @@ window.IMPERIUM_PayFee = {};
         return;
       }
 
-      // --- Detect active network from wallet ---
+      // --- Detect active network dynamically ---
       const addrResp = await provider.request("getAddresses");
-      const stxAccount = addrResp?.result?.addresses?.find(a => a.symbol === "STX");
-      const walletNetwork = stxAccount?.network?.includes("mainnet") ? "mainnet" : "testnet";
+      const stxAccount = addrResp?.result?.addresses?.find(
+        (a) => a.symbol === "STX"
+      );
       const activeAddress = stxAccount?.address || senderAddress;
 
-      window.IMPERIUM_LOG(`[PayFee] 🌐 Detected network from wallet: ${walletNetwork.toUpperCase()}`);
+      // Detect network by prefix (Leather doesn’t expose it directly)
+      const walletNetwork = activeAddress.startsWith("SP")
+        ? "mainnet"
+        : activeAddress.startsWith("ST")
+        ? "testnet"
+        : (window.IMPERIUM_PARAM && window.IMPERIUM_PARAM.network) || "mainnet";
+
+      window.IMPERIUM_PARAM.network = walletNetwork;
+
+      window.IMPERIUM_LOG(
+        `[PayFee] 🌐 Detected network from wallet: ${walletNetwork.toUpperCase()}`
+      );
       window.IMPERIUM_LOG(`[PayFee] 💼 Active STX address: ${activeAddress}`);
 
-      // --- Fetch balance from Hiro API ---
-      const apiBase = walletNetwork === "mainnet"
-     ? "https://api.hiro.so"
-     : "https://api.testnet.hiro.so";
-    window.IMPERIUM_LOG(`[PayFee] 🌍 Using Hiro API endpoint: ${apiBase}`);
+      // --- Select correct API endpoint ---
+      const apiBase =
+        walletNetwork === "mainnet"
+          ? "https://api.hiro.so"
+          : "https://api.testnet.hiro.so";
 
-      const balanceResp = await fetch(`${apiBase}/extended/v1/address/${activeAddress}/balances`);
+      window.IMPERIUM_LOG(`[PayFee] 🌍 Using Hiro API endpoint: ${apiBase}`);
+
+      // --- Fetch balance from Hiro API (v2) ---
+      const balanceResp = await fetch(`${apiBase}/v2/accounts/${activeAddress}`, {
+        cache: "no-cache",
+      });
       const balanceData = await balanceResp.json();
-      const stxBalance = (balanceData?.stx?.balance || 0) / 1_000_000;
+      const balanceRaw = balanceData.balance || "0";
+      const stxBalance = parseFloat(balanceRaw) / 1_000_000;
 
-      window.IMPERIUM_LOG(`[PayFee] 💰 Current STX balance: ${stxBalance.toFixed(6)} STX`);
+      window.IMPERIUM_LOG(
+        `[PayFee] 💰 Current STX balance: ${stxBalance.toFixed(6)} STX`
+      );
 
       if (stxBalance < feeSTX) {
-        alert(`⚠️ Insufficient funds. You have ${stxBalance.toFixed(3)} STX but need ${feeSTX}.`);
+        alert(
+          `⚠️ Insufficient funds. You have ${stxBalance.toFixed(
+            3
+          )} STX but need ${feeSTX}.`
+        );
         window.IMPERIUM_LOG("[PayFee] ❌ Insufficient balance for transaction.");
         return;
       }
 
-      // --- Import functions from stacks.js ---
+      // --- Check for openSTXTransfer ---
       const { openSTXTransfer } = window;
       if (!openSTXTransfer) {
         alert("❌ Missing Stacks SDK in page context.");
-        window.IMPERIUM_LOG("[PayFee] ❌ openSTXTransfer not found — Stacks.js not loaded.");
+        window.IMPERIUM_LOG(
+          "[PayFee] ❌ openSTXTransfer not found — Stacks.js not loaded."
+        );
         return;
       }
 
+      // --- Define transaction options ---
       const networkURL =
         walletNetwork === "mainnet"
           ? "https://stacks-node-api.mainnet.stacks.co"
@@ -81,6 +110,7 @@ window.IMPERIUM_PayFee = {};
             walletNetwork === "mainnet"
               ? `https://explorer.stacks.co/txid/${data.txId}`
               : `https://explorer.stacks.co/txid/${data.txId}?chain=testnet`;
+
           window.IMPERIUM_LOG(`[PayFee] ✅ Transaction confirmed: ${data.txId}`);
           window.IMPERIUM_LOG(`[PayFee] 🔗 Explorer: ${explorer}`);
           alert(`✅ Transaction sent!\nTXID: ${data.txId}`);
@@ -94,6 +124,7 @@ window.IMPERIUM_PayFee = {};
       window.IMPERIUM_LOG(
         `[PayFee] 🚀 Sending ${feeSTX} STX from ${activeAddress} → ${recipient} (${walletNetwork.toUpperCase()})`
       );
+
       await openSTXTransfer(txOptions);
     } catch (err) {
       console.error(err);
@@ -110,7 +141,9 @@ window.IMPERIUM_PayFee = {};
       btn.addEventListener("click", sendFee);
       window.IMPERIUM_LOG("[PayFee] 🟢 Button listener attached successfully.");
     } else {
-      window.IMPERIUM_LOG("[PayFee] ⚠️ Button not found in DOM (btn-notarize).");
+      window.IMPERIUM_LOG(
+        "[PayFee] ⚠️ Button not found in DOM (btn-notarize)."
+      );
     }
   }
 
