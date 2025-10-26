@@ -40,8 +40,10 @@ window.IMPERIUM_PayFee = {};
 
       // --- Fetch balance from Hiro API ---
       const apiBase = walletNetwork === "mainnet"
-        ? "https://api.hiro.so"
-        : "https://api.testnet.hiro.so";
+     ? "https://api.hiro.so"
+     : "https://api.testnet.hiro.so";
+    window.IMPERIUM_LOG(`[PayFee] 🌍 Using Hiro API endpoint: ${apiBase}`);
+
       const balanceResp = await fetch(`${apiBase}/extended/v1/address/${activeAddress}/balances`);
       const balanceData = await balanceResp.json();
       const stxBalance = (balanceData?.stx?.balance || 0) / 1_000_000;
