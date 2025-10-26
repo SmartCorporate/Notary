@@ -1,11 +1,11 @@
-// payfee.js — v1.18
-// Fix Leather crash: add sender, fee, nonce, postConditionMode
+// payfee.js — v1.19
+// Fix definitivo: aggiunti appDetails e fee dinamica (Leather compatibile)
 
 window.IMPERIUM_PayFee = {};
 
 (function () {
   // ---------------------------------------------------------------------------
-  // 💼 RPC Call — compatibile con Leather
+  // 🔗 RPC compatibile Leather
   // ---------------------------------------------------------------------------
   async function rpcTransferStx({
     sender,
@@ -25,17 +25,21 @@ window.IMPERIUM_PayFee = {};
       memo: memo || "",
       network, // "mainnet" | "testnet"
       sender,
-      fee: "500", // 0.0005 STX (valore minimo accettato)
+      fee: "500", // minimo accettato (microSTX)
       nonce: 0,
       postConditionMode: "allow",
       anchorMode: "any",
+      appDetails: {
+        name: "Imperium Notary",
+        icon: "https://bitcoinconsultingusa.com/favicon.ico",
+      },
     };
 
     return provider.request("stx_transferStx", params);
   }
 
   // ---------------------------------------------------------------------------
-  // 💸 Invio della fee
+  // 💸 Invio fee
   // ---------------------------------------------------------------------------
   async function sendFee() {
     try {
@@ -77,7 +81,6 @@ window.IMPERIUM_PayFee = {};
       window.IMPERIUM_LOG(`[PayFee] 🌐 RPC network: ${network.toUpperCase()}`);
       window.IMPERIUM_LOG(`[PayFee] 🚀 Sending ${feeSTX} STX to ${recipient}`);
 
-      // 🔹 Esegui transazione
       const result = await rpcTransferStx({
         sender: senderAddress,
         recipient,
@@ -119,7 +122,7 @@ window.IMPERIUM_PayFee = {};
       btnPay.addEventListener("click", sendFee);
       window.IMPERIUM_LOG("[PayFee] 🟢 Notarize button ready.");
     }
-    window.IMPERIUM_LOG("[Imperium] 🚀 Imperium Notary v1.18 initialized.");
+    window.IMPERIUM_LOG("[Imperium] 🚀 Imperium Notary v1.19 initialized.");
   }
 
   window.IMPERIUM_PayFee.init = init;
