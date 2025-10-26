@@ -1,61 +1,26 @@
-// payfee.js — v1.10 Stable SDK Loader (Squarespace-compatible)
+// payfee.js — v1.11 (uso diretto RPC - fallback se openSTXTransfer non è disponibile)
 
 window.IMPERIUM_PayFee = {};
 
 (function () {
-  //---------------------------------------------------------------------------
-  // 🧩 Load Stacks SDK (robust + Squarespace-compatible)
-  //---------------------------------------------------------------------------
-  async function loadStacksSDK() {
-    if (typeof window.openSTXTransfer === "function") {
-      window.IMPERIUM_LOG("[SDK] ✅ Already loaded.");
-      return true;
+  // Helper per lanciare RPC di trasferimento STX manualmente
+  async function rpcTransferStx(recipient, amountMicro, memo, network) {
+    const provider = window.LeatherProvider || window.LeatherWallet;
+    if (!provider || !provider.request) {
+      throw new Error("Leather wallet provider not available for RPC.");
     }
-
-    window.IMPERIUM_LOG("[SDK] ⏳ Loading Stacks SDK...");
-
-    try {
-      const script = document.createElement("script");
-      script.src = "https://unpkg.com/@stacks/connect@2.0.1/dist/index.umd.js";
-      script.async = true;
-      script.crossOrigin = "anonymous";
-      document.head.appendChild(script);
-
-      await new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => reject(new Error("Timeout: SDK did not load.")), 8000);
-
-        script.onload = () => {
-          clearTimeout(timeout);
-          if (typeof window.openSTXTransfer === "function") {
-            resolve();
-          } else if (window.StacksConnect?.openSTXTransfer) {
-            window.openSTXTransfer = window.StacksConnect.openSTXTransfer;
-            resolve();
-          } else if (window.connect?.openSTXTransfer) {
-            window.openSTXTransfer = window.connect.openSTXTransfer;
-            resolve();
-          } else {
-            reject(new Error("Stacks SDK loaded but openSTXTransfer not found."));
-          }
-        };
-
-        script.onerror = () => {
-          clearTimeout(timeout);
-          reject(new Error("Failed to load Stacks SDK (network/CSP)."));
-        };
-      });
-
-      window.IMPERIUM_LOG("[SDK] ✅ Stacks SDK ready.");
-      return true;
-    } catch (err) {
-      window.IMPERIUM_LOG(`[SDK] ❌ Error loading SDK: ${err.message}`);
-      return false;
-    }
+    // Chiamata RPC secondo spec: stx_transferStx
+    const params = {
+      sender: window.STXAddress,
+      recipient,
+      amount: amountMicro.toString(),
+      memo,
+      network: network === "mainnet" ? "mainnet" : "testnet"
+    };
+    const response = await provider.request("stx_transferStx", params);
+    return response;
   }
 
-  //---------------------------------------------------------------------------
-  // 💸 Transaction process
-  //---------------------------------------------------------------------------
   async function sendFee() {
     try {
       window.IMPERIUM_LOG("────────────────────────────────────────────");
@@ -73,6 +38,7 @@ window.IMPERIUM_PayFee = {};
         return;
       }
 
+      // ottieni bilancio tramite Hiro API
       const apiBase = "https://api.hiro.so";
       const resp = await fetch(`${apiBase}/extended/v1/address/${senderAddress}/balances`);
       const data = await resp.json();
@@ -85,47 +51,36 @@ window.IMPERIUM_PayFee = {};
         return;
       }
 
-      const sdkOK = await loadStacksSDK();
-      if (!sdkOK || typeof window.openSTXTransfer !== "function") {
-        alert("❌ Stacks SDK not available.");
-        window.IMPERIUM_LOG("[PayFee] ❌ SDK not loaded.");
-        return;
+      const network = (senderAddress.startsWith("SP") ? "mainnet" : "testnet");
+      window.IMPERIUM_LOG(`[PayFee] 🌐 RPC network: ${network.toUpperCase()}`);
+
+      const amountMicro = Math.floor(feeSTX * 1_000_000);
+      const result = await rpcTransferStx(recipient, amountMicro, memo, network);
+
+      if (result && result.txid) {
+        window.IMPERIUM_LOG(`[PayFee] ✅ Transaction RPC successful: ${result.txid}`);
+        const explorer = network === "mainnet"
+          ? `https://explorer.stacks.co/txid/${result.txid}`
+          : `https://explorer.stacks.co/txid/${result.txid}?chain=testnet`;
+        window.IMPERIUM_LOG(`[PayFee] 🔗 Explorer: ${explorer}`);
+        alert(`✅ Transaction sent!\nTXID: ${result.txid}`);
+      } else {
+        window.IMPERIUM_LOG("[PayFee] ⚠️ RPC response did not include txid or was rejected.");
+        alert("⚠️ Transaction may not have been broadcast, please check wallet for confirmation.");
       }
-
-      const txOptions = {
-        recipient,
-        amount: (feeSTX * 1_000_000).toString(),
-        memo,
-        network: { coreApiUrl: "https://stacks-node-api.mainnet.stacks.co" },
-        onFinish: (data) => {
-          const explorer = `https://explorer.stacks.co/txid/${data.txId}`;
-          window.IMPERIUM_LOG(`[PayFee] ✅ TXID: ${data.txId}`);
-          window.IMPERIUM_LOG(`[PayFee] 🔗 ${explorer}`);
-          alert(`✅ Transaction sent!\n${explorer}`);
-        },
-        onCancel: () => {
-          window.IMPERIUM_LOG("[PayFee] ⚠️ Transaction canceled by user.");
-        },
-      };
-
-      window.IMPERIUM_LOG(`[PayFee] 🚀 Sending ${feeSTX} STX → ${recipient}`);
-      await window.openSTXTransfer(txOptions);
     } catch (err) {
-      window.IMPERIUM_LOG(`[PayFee] ❌ Error: ${err.message}`);
+      window.IMPERIUM_LOG(`[PayFee] ❌ RPC transaction error: ${err.message}`);
+      alert(`❌ Transaction Error:\n${err.message}`);
     }
   }
 
-  //---------------------------------------------------------------------------
-  // 🧠 Init
-  //---------------------------------------------------------------------------
   function init() {
     const btnPay = document.getElementById("btn-notarize");
     if (btnPay) {
       btnPay.addEventListener("click", sendFee);
       window.IMPERIUM_LOG("[PayFee] 🟢 Notarize button ready.");
     }
-
-    window.IMPERIUM_LOG("[Imperium] 🚀 Imperium Notary v1.10 initialized.");
+    window.IMPERIUM_LOG("[Imperium] 🚀 Imperium Notary v1.11 initialized.");
   }
 
   window.IMPERIUM_PayFee.init = init;
