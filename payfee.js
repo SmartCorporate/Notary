@@ -1,5 +1,5 @@
-// payfee.js — Controlled Version v1.6
-// Manual connect only + proper log + working SDK + mainnet only
+// payfee.js — v1.7 (Imperium Standard)
+// Manual connect + improved LED + full log + stable SDK
 
 window.IMPERIUM_PayFee = {};
 
@@ -16,22 +16,22 @@ window.IMPERIUM_PayFee = {};
     window.IMPERIUM_LOG("[SDK] ⏳ Loading Stacks SDK...");
     try {
       const script = document.createElement("script");
-      script.src = "https://cdn.jsdelivr.net/npm/@stacks/connect@latest/dist/index.umd.js";
+      script.src = "https://cdn.jsdelivr.net/npm/@stacks/connect@2.7.0/dist/index.umd.js";
       script.async = true;
       document.head.appendChild(script);
 
       await new Promise((resolve, reject) => {
         script.onload = () => {
-          if (window.openSTXTransfer) resolve();
-          else reject(new Error("openSTXTransfer not found after load."));
+          if (window.openSTXTransfer) {
+            window.IMPERIUM_LOG("[SDK] ✅ Stacks SDK ready.");
+            resolve();
+          } else reject(new Error("openSTXTransfer not found."));
         };
-        script.onerror = () => reject(new Error("Stacks SDK failed to load."));
+        script.onerror = () => reject(new Error("Failed to load Stacks SDK."));
       });
-
-      window.IMPERIUM_LOG("[SDK] ✅ Stacks SDK ready.");
       return true;
     } catch (err) {
-      window.IMPERIUM_LOG(`[SDK] ❌ Error loading SDK: ${err.message}`);
+      window.IMPERIUM_LOG(`[SDK] ❌ Error: ${err.message}`);
       return false;
     }
   }
@@ -55,9 +55,14 @@ window.IMPERIUM_PayFee = {};
       if (stxAccount?.address) {
         window.STXAddress = stxAccount.address;
 
-        const el = document.getElementById("wallet-status");
-        if (el) {
-          el.innerHTML = `Wallet: <span style="color:#3cff6c">connected</span> (${stxAccount.address})`;
+        // --- Update UI LED ---
+        const led = document.getElementById("wallet-led");
+        const txt = document.getElementById("wallet-text");
+        if (led && txt) {
+          led.style.backgroundColor = "#33ff66";
+          led.style.boxShadow = "0 0 8px #33ff66";
+          txt.style.color = "#33ff66";
+          txt.innerHTML = `Wallet: connected (${stxAccount.address})`;
         }
 
         window.IMPERIUM_LOG(`[Connection] ✅ Wallet connected: ${stxAccount.address}`);
@@ -103,8 +108,8 @@ window.IMPERIUM_PayFee = {};
         return;
       }
 
-      await loadStacksSDK();
-      if (!window.openSTXTransfer) {
+      const sdkOK = await loadStacksSDK();
+      if (!sdkOK || !window.openSTXTransfer) {
         alert("❌ Stacks SDK not available.");
         window.IMPERIUM_LOG("[PayFee] ❌ SDK not loaded.");
         return;
