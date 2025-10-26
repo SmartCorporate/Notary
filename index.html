@@ -8,12 +8,16 @@
   <!-- Stile principale -->
   <link rel="stylesheet" href="style.css" />
 
-  <!-- Librerie Stacks.js necessarie per le transazioni STX -->
-  <!-- ✅ Correct, unified Stacks SDK bundle -->
-  <script src="https://cdn.jsdelivr.net/npm/@stacks/connect@7.1.0/dist/connect.umd.js"></script>
+  <!-- ✅ Corrected and verified Stacks SDK loader -->
+  <script 
+    async
+    src="https://cdn.jsdelivr.net/npm/@stacks/connect@7.1.0/dist/connect.umd.js"
+    onload="console.log('✅ Stacks SDK loaded successfully'); window.STACKS_SDK_LOADED=true;"
+    onerror="console.error('❌ Failed to load Stacks SDK'); window.STACKS_SDK_LOADED=false;">
+  </script>
+
   <script src="https://cdn.jsdelivr.net/npm/@stacks/transactions@6.9.0/dist/transactions.umd.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@stacks/network@6.9.0/dist/network.umd.js"></script>
-
 </head>
 
 <body>
@@ -41,7 +45,7 @@
       <textarea id="message" maxlength="500" placeholder="Type your message here (max 500 characters)..."></textarea>
 
       <div class="fee">
-        <span>💰 Current Fee: <b id="fee-amount">5.00 STX</b></span>
+        <span>💰 Current Fee: <b id="fee-amount">1.00 STX</b></span>
       </div>
 
       <div class="button-row">
@@ -60,11 +64,7 @@
   <!-- 🔹 Script principali -->
   <script src="main.js"></script>
   <script src="connection.js"></script>
-
-  <!-- 🔹 File parametri globali -->
   <script src="param.js"></script>
-
-  <!-- 🔹 Modulo pagamento STX -->
   <script src="payfee.js"></script>
 
   <!-- 🔹 Inizializzazione -->
@@ -81,16 +81,17 @@
       }
     });
   </script>
+
   <script>
-  document.addEventListener("DOMContentLoaded", () => {
-    console.log("📦 Forcing payfee init...");
-    if (window.IMPERIUM_PayFee && window.IMPERIUM_PayFee.init) {
-      window.IMPERIUM_PayFee.init();
-    } else {
-      console.log("❌ payfee.js not loaded or init() missing.");
-    }
-  });
-</script>
+    document.addEventListener("DOMContentLoaded", () => {
+      console.log("📦 Forcing payfee init...");
+      if (window.IMPERIUM_PayFee && window.IMPERIUM_PayFee.init) {
+        window.IMPERIUM_PayFee.init();
+      } else {
+        console.log("❌ payfee.js not loaded or init() missing.");
+      }
+    });
+  </script>
 
 </body>
 </html>
