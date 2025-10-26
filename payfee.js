@@ -1,42 +1,67 @@
-// payfee.js — v1.12 (RPC compatibile con Leather Wallet - Mainnet)
+// payfee.js — v1.13
+// Invio fee STX via Leather RPC con network object completo (mainnet/testnet)
+// + logging robusto degli errori
 
 window.IMPERIUM_PayFee = {};
 
 (function () {
-  //---------------------------------------------------------------------------
-  // 🔗 Invio STX tramite RPC diretto compatibile Leather Wallet
-  //---------------------------------------------------------------------------
-  async function rpcTransferStx(recipient, amountMicro, memo, network) {
-    const provider = window.LeatherProvider || window.LeatherWallet;
+  // ---------------------------------------------------------------------------
+  // Utility: costruisci oggetto network per Leather/Stacks
+  // ---------------------------------------------------------------------------
+  function buildNetworkFor(address) {
+    const isMainnet = address && address.startsWith("SP");
+    if (isMainnet) {
+      return {
+        name: "mainnet",
+        // molti wallet si aspettano questa key:
+        network: "mainnet",
+        // e soprattutto un coreApiUrl valido per fee/nonce estimation:
+        coreApiUrl: "https://stacks-node-api.mainnet.stacks.co",
+        chainId: 1,
+      };
+    }
+    return {
+      name: "testnet",
+      network: "testnet",
+      coreApiUrl: "https://stacks-node-api.testnet.stacks.co",
+      chainId: 2147483648, // ChainID testnet
+    };
+  }
+
+  // ---------------------------------------------------------------------------
+  // RPC: stx_transferStx (Leather)
+  // ---------------------------------------------------------------------------
+  async function rpcTransferStx({ recipient, amountMicro, memo, networkObj }) {
+    const provider = window.LeatherProvider || window.LeatherWallet || window.btc;
     if (!provider || !provider.request) {
       throw new Error("Leather wallet provider not available for RPC.");
     }
 
-    // Parametri secondo schema ufficiale Stacks RPC
+    // Schema atteso dal wallet: includere network come oggetto con coreApiUrl
     const params = {
       recipient: recipient,
       amount: amountMicro.toString(),
       memo: memo || "",
-      network: network === "mainnet" ? "mainnet" : "testnet",
+      network: networkObj, // <— importante: oggetto con coreApiUrl
+      // opzionali ma spesso accettati; il wallet calcola fee/nonce da sé
+      anchorMode: "any",
     };
 
-    // Effettua chiamata RPC
-    const response = await provider.request("stx_transferStx", params);
-    return response;
+    return provider.request("stx_transferStx", params);
   }
 
-  //---------------------------------------------------------------------------
-  // 💸 Esegui pagamento della fee
-  //---------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
+  // Invio fee
+  // ---------------------------------------------------------------------------
   async function sendFee() {
     try {
       window.IMPERIUM_LOG("────────────────────────────────────────────");
       window.IMPERIUM_LOG("[PayFee] 🔸 Transaction process started.");
 
-      const params = window.IMPERIUM_PARAM || {};
-      const recipient = params.ironpoolAddress;
-      const feeSTX = params.feeSTX || 1.0;
-      const memo = params.feeMemo || "Imperium Notary Fee";
+      const cfg = window.IMPERIUM_PARAM || {};
+      const recipient = cfg.ironpoolAddress;
+      const feeSTX = cfg.feeSTX || 1.0;
+      const memo = cfg.feeMemo || "Imperium Notary Fee";
       const senderAddress = window.STXAddress;
 
       if (!senderAddress) {
@@ -45,54 +70,77 @@ window.IMPERIUM_PayFee = {};
         return;
       }
 
-      // Controllo saldo attuale
-      const apiBase = "https://api.hiro.so";
-      const resp = await fetch(`${apiBase}/extended/v1/address/${senderAddress}/balances`);
-      const data = await resp.json();
-      const stxBalance = (data?.stx?.balance || 0) / 1_000_000;
-      window.IMPERIUM_LOG(`[PayFee] 💰 Balance: ${stxBalance.toFixed(6)} STX`);
+      // saldo
+      const apiBase = senderAddress.startsWith("SP")
+        ? "https://api.hiro.so"
+        : "https://api.testnet.hiro.so";
 
+      const balRes = await fetch(
+        `${apiBase}/extended/v1/address/${senderAddress}/balances`
+      );
+      const balJson = await balRes.json();
+      const stxBalance = (balJson?.stx?.balance || 0) / 1_000_000;
+
+      window.IMPERIUM_LOG(`[PayFee] 💰 Balance: ${stxBalance.toFixed(6)} STX`);
       if (stxBalance < feeSTX) {
-        alert(`⚠️ Insufficient funds: ${stxBalance.toFixed(3)} STX available.`);
         window.IMPERIUM_LOG("[PayFee] ❌ Insufficient funds.");
+        alert(`⚠️ Insufficient funds: ${stxBalance.toFixed(3)} STX available.`);
         return;
       }
 
-      // Network detection
-      const network = senderAddress.startsWith("SP") ? "mainnet" : "testnet";
+      const networkObj = buildNetworkFor(senderAddress);
       const amountMicro = Math.floor(feeSTX * 1_000_000);
 
-      window.IMPERIUM_LOG(`[PayFee] 🌐 RPC network: ${network.toUpperCase()}`);
+      window.IMPERIUM_LOG(
+        `[PayFee] 🌐 RPC network: ${networkObj.name.toUpperCase()}`
+      );
       window.IMPERIUM_LOG(`[PayFee] 🚀 Sending ${feeSTX} STX to ${recipient}`);
 
-      // 🔥 Invio transazione
-      const result = await rpcTransferStx(recipient, amountMicro, memo, network);
+      // chiamata RPC
+      const result = await rpcTransferStx({
+        recipient,
+        amountMicro,
+        memo,
+        networkObj,
+      });
 
+      // risposta tipica: { txid: "0x..." } oppure { error: {...} }
       if (result?.txid) {
-        const explorer = `https://explorer.stacks.co/txid/${result.txid}${network === "testnet" ? "?chain=testnet" : ""}`;
+        const explorer = `https://explorer.stacks.co/txid/${result.txid}${
+          networkObj.name === "testnet" ? "?chain=testnet" : ""
+        }`;
         window.IMPERIUM_LOG(`[PayFee] ✅ Transaction broadcast: ${result.txid}`);
         window.IMPERIUM_LOG(`[PayFee] 🔗 ${explorer}`);
         alert(`✅ Transaction sent!\n${explorer}`);
-      } else {
-        window.IMPERIUM_LOG("[PayFee] ⚠️ No TXID returned by RPC.");
-        alert("⚠️ Transaction may not have been broadcast. Check Leather wallet manually.");
+        return;
       }
+
+      if (result?.error) {
+        const msg =
+          result.error.message || JSON.stringify(result.error, null, 2);
+        throw new Error(msg);
+      }
+
+      throw new Error("No TXID returned by wallet.");
     } catch (err) {
-      window.IMPERIUM_LOG(`[PayFee] ❌ RPC transaction error: ${err.message}`);
-      alert(`❌ Transaction Error:\n${err.message}`);
+      const msg =
+        (err && err.message) ||
+        (typeof err === "string" ? err : JSON.stringify(err));
+      window.IMPERIUM_LOG(`[PayFee] ❌ RPC transaction error: ${msg}`);
+      alert(`❌ Transaction Error:\n${msg}`);
     }
   }
 
-  //---------------------------------------------------------------------------
-  // 🧠 Init
-  //---------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
+  // Init
+  // ---------------------------------------------------------------------------
   function init() {
     const btnPay = document.getElementById("btn-notarize");
     if (btnPay) {
       btnPay.addEventListener("click", sendFee);
       window.IMPERIUM_LOG("[PayFee] 🟢 Notarize button ready.");
     }
-    window.IMPERIUM_LOG("[Imperium] 🚀 Imperium Notary v1.12 initialized.");
+    window.IMPERIUM_LOG("[Imperium] 🚀 Imperium Notary v1.13 initialized.");
   }
 
   window.IMPERIUM_PayFee.init = init;
