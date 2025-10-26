@@ -1,26 +1,33 @@
-// payfee.js — v1.11 (uso diretto RPC - fallback se openSTXTransfer non è disponibile)
+// payfee.js — v1.12 (RPC compatibile con Leather Wallet - Mainnet)
 
 window.IMPERIUM_PayFee = {};
 
 (function () {
-  // Helper per lanciare RPC di trasferimento STX manualmente
+  //---------------------------------------------------------------------------
+  // 🔗 Invio STX tramite RPC diretto compatibile Leather Wallet
+  //---------------------------------------------------------------------------
   async function rpcTransferStx(recipient, amountMicro, memo, network) {
     const provider = window.LeatherProvider || window.LeatherWallet;
     if (!provider || !provider.request) {
       throw new Error("Leather wallet provider not available for RPC.");
     }
-    // Chiamata RPC secondo spec: stx_transferStx
+
+    // Parametri secondo schema ufficiale Stacks RPC
     const params = {
-      sender: window.STXAddress,
-      recipient,
+      recipient: recipient,
       amount: amountMicro.toString(),
-      memo,
-      network: network === "mainnet" ? "mainnet" : "testnet"
+      memo: memo || "",
+      network: network === "mainnet" ? "mainnet" : "testnet",
     };
+
+    // Effettua chiamata RPC
     const response = await provider.request("stx_transferStx", params);
     return response;
   }
 
+  //---------------------------------------------------------------------------
+  // 💸 Esegui pagamento della fee
+  //---------------------------------------------------------------------------
   async function sendFee() {
     try {
       window.IMPERIUM_LOG("────────────────────────────────────────────");
@@ -38,7 +45,7 @@ window.IMPERIUM_PayFee = {};
         return;
       }
 
-      // ottieni bilancio tramite Hiro API
+      // Controllo saldo attuale
       const apiBase = "https://api.hiro.so";
       const resp = await fetch(`${apiBase}/extended/v1/address/${senderAddress}/balances`);
       const data = await resp.json();
@@ -51,22 +58,24 @@ window.IMPERIUM_PayFee = {};
         return;
       }
 
-      const network = (senderAddress.startsWith("SP") ? "mainnet" : "testnet");
-      window.IMPERIUM_LOG(`[PayFee] 🌐 RPC network: ${network.toUpperCase()}`);
-
+      // Network detection
+      const network = senderAddress.startsWith("SP") ? "mainnet" : "testnet";
       const amountMicro = Math.floor(feeSTX * 1_000_000);
+
+      window.IMPERIUM_LOG(`[PayFee] 🌐 RPC network: ${network.toUpperCase()}`);
+      window.IMPERIUM_LOG(`[PayFee] 🚀 Sending ${feeSTX} STX to ${recipient}`);
+
+      // 🔥 Invio transazione
       const result = await rpcTransferStx(recipient, amountMicro, memo, network);
 
-      if (result && result.txid) {
-        window.IMPERIUM_LOG(`[PayFee] ✅ Transaction RPC successful: ${result.txid}`);
-        const explorer = network === "mainnet"
-          ? `https://explorer.stacks.co/txid/${result.txid}`
-          : `https://explorer.stacks.co/txid/${result.txid}?chain=testnet`;
-        window.IMPERIUM_LOG(`[PayFee] 🔗 Explorer: ${explorer}`);
-        alert(`✅ Transaction sent!\nTXID: ${result.txid}`);
+      if (result?.txid) {
+        const explorer = `https://explorer.stacks.co/txid/${result.txid}${network === "testnet" ? "?chain=testnet" : ""}`;
+        window.IMPERIUM_LOG(`[PayFee] ✅ Transaction broadcast: ${result.txid}`);
+        window.IMPERIUM_LOG(`[PayFee] 🔗 ${explorer}`);
+        alert(`✅ Transaction sent!\n${explorer}`);
       } else {
-        window.IMPERIUM_LOG("[PayFee] ⚠️ RPC response did not include txid or was rejected.");
-        alert("⚠️ Transaction may not have been broadcast, please check wallet for confirmation.");
+        window.IMPERIUM_LOG("[PayFee] ⚠️ No TXID returned by RPC.");
+        alert("⚠️ Transaction may not have been broadcast. Check Leather wallet manually.");
       }
     } catch (err) {
       window.IMPERIUM_LOG(`[PayFee] ❌ RPC transaction error: ${err.message}`);
@@ -74,13 +83,16 @@ window.IMPERIUM_PayFee = {};
     }
   }
 
+  //---------------------------------------------------------------------------
+  // 🧠 Init
+  //---------------------------------------------------------------------------
   function init() {
     const btnPay = document.getElementById("btn-notarize");
     if (btnPay) {
       btnPay.addEventListener("click", sendFee);
       window.IMPERIUM_LOG("[PayFee] 🟢 Notarize button ready.");
     }
-    window.IMPERIUM_LOG("[Imperium] 🚀 Imperium Notary v1.11 initialized.");
+    window.IMPERIUM_LOG("[Imperium] 🚀 Imperium Notary v1.12 initialized.");
   }
 
   window.IMPERIUM_PayFee.init = init;
