@@ -1,5 +1,5 @@
-// payfee.js — v2.12 Imperium Notary
-// Fix: Leather expects `network` as "mainnet" | "testnet" (string), not object.
+// payfee.js — v2.13 Imperium Notary
+// Fix: Leather requires `senderAddress` + simplified param validation.
 
 window.IMPERIUM_PayFee = {};
 
@@ -62,9 +62,10 @@ window.IMPERIUM_PayFee = {};
       recipient,
       amount: amountMicro,
       memo: memo || "",
-      network, // ✅ string only
+      network,                       // must be "mainnet" or "testnet"
       fee: feeMicro,
-      sender,
+      sender,                         // for legacy
+      senderAddress: sender,          // ✅ required by Leather (for unsigned TX build)
       recentBlockHash: blockHash || undefined,
       anchorMode: "any",
       postConditionMode: "deny",
