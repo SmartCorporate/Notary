@@ -1,14 +1,16 @@
-// payfee.js — v2.13 Imperium Notary
-// Fix: Leather requires `senderAddress` + simplified param validation.
+// payfee.js — v2.14 Imperium Notary
+// Stable version using Leather Wallet RPC (2025-10-27)
+// Fixes: anchorMode corrected, block hash removed (Leather auto-handles it), validated parameters.
 
 window.IMPERIUM_PayFee = {};
 
 (function () {
-  const DEFAULT_FEE_MICRO = 10000;
+  const DEFAULT_FEE_MICRO = 10000; // 0.00001 STX
   const HIRO_API = "https://api.hiro.so";
   const STACKS_MAIN = "https://api.mainnet.hiro.so";
   const STACKS_TEST = "https://api.testnet.hiro.so";
 
+  // =============== UTILITIES ===============
   function safeLog(...args) {
     if (window.IMPERIUM_LOG) window.IMPERIUM_LOG(args.join(" "));
     else console.log(...args);
@@ -18,18 +20,6 @@ window.IMPERIUM_PayFee = {};
     const r = await fetch(url);
     if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
     return r.json();
-  }
-
-  async function getRecentBlockHash(network) {
-    try {
-      const node = network === "mainnet" ? STACKS_MAIN : STACKS_TEST;
-      const j = await fetchJson(`${node}/extended/v1/block?limit=1`);
-      const block = j.results?.[0] || j || null;
-      return block?.hash || block?.canonical_block_hash || block?.burn_block_hash || null;
-    } catch (err) {
-      safeLog("[SDK] ⚠️ Failed fetching recent block hash:", err.message || err);
-      return null;
-    }
   }
 
   async function fetchStxBalance(stxAddress) {
@@ -47,27 +37,24 @@ window.IMPERIUM_PayFee = {};
     return window.LeatherProvider || window.LeatherWallet || null;
   }
 
+  // =============== CORE TRANSFER FUNCTION ===============
   async function transferViaLeather({ sender, recipient, amountMicro, memo }) {
     const provider = getProvider();
     if (!provider) throw new Error("Leather provider not found.");
 
     const network = sender.startsWith("SP") ? "mainnet" : "testnet";
-    const blockHash = await getRecentBlockHash(network);
     const feeMicro = Math.max(DEFAULT_FEE_MICRO, Math.floor(amountMicro * 0.002));
 
     safeLog(`[PayFee] 🌐 Using Leather provider on ${network}`);
-    safeLog(`[PayFee] 💡 Block hash: ${blockHash || "(none)"}`);
 
     const params = {
       recipient,
-      amount: amountMicro,
+      amount: amountMicro,           // microstx numeric
       memo: memo || "",
-      network,                       // must be "mainnet" or "testnet"
-      fee: feeMicro,
-      sender,                         // for legacy
-      senderAddress: sender,          // ✅ required by Leather (for unsigned TX build)
-      recentBlockHash: blockHash || undefined,
-      anchorMode: "any",
+      network,                       // "mainnet" | "testnet"
+      fee: feeMicro,                 // numeric fee
+      senderAddress: sender,         // REQUIRED by Leather
+      anchorMode: "on_chain_only",   // ✅ required by unsigned tx generator
       postConditionMode: "deny",
       appDetails: {
         name: "Imperium Notary",
@@ -89,6 +76,7 @@ window.IMPERIUM_PayFee = {};
     }
   }
 
+  // =============== SEND FUNCTION (CALLED BY BUTTON) ===============
   async function sendFee() {
     try {
       safeLog("────────────────────────────────────────────");
@@ -124,7 +112,7 @@ window.IMPERIUM_PayFee = {};
 
       if (tx.success) {
         const txid = tx.result?.txid || tx.result?.txId || tx.result?.hash;
-        alert(`✅ Transaction submitted! TXID:\n${txid || "Check wallet for confirmation."}`);
+        alert(`✅ Transaction submitted successfully!\nTXID:\n${txid || "Check your wallet for confirmation."}`);
         safeLog(`[PayFee] ✅ TXID: ${txid || "not returned"}`);
       }
     } catch (err) {
@@ -137,12 +125,16 @@ window.IMPERIUM_PayFee = {};
     }
   }
 
+  // =============== INITIALIZATION ===============
   function init() {
     const btn = document.getElementById("btn-notarize");
     if (btn) {
       btn.addEventListener("click", sendFee);
       safeLog("[PayFee] 🟢 Notarize button ready.");
+    } else {
+      safeLog("[PayFee] ⚠️ Notarize button not found in DOM.");
     }
+
     safeLog("[Imperium] 🚀 Imperium Notary payfee module initialized.");
   }
 
