@@ -1,5 +1,5 @@
-// payfee.js — v2.11 Imperium Notary
-// Fixed Leather strict param schema + readable error parsing
+// payfee.js — v2.12 Imperium Notary
+// Fix: Leather expects `network` as "mainnet" | "testnet" (string), not object.
 
 window.IMPERIUM_PayFee = {};
 
@@ -60,14 +60,10 @@ window.IMPERIUM_PayFee = {};
 
     const params = {
       recipient,
-      amount: amountMicro, // numeric microstx
+      amount: amountMicro,
       memo: memo || "",
-      network: {
-        name: network,
-        chainId: network === "mainnet" ? 1 : 2147483648,
-        coreApiUrl: network === "mainnet" ? STACKS_MAIN : STACKS_TEST,
-      },
-      fee: feeMicro, // numeric
+      network, // ✅ string only
+      fee: feeMicro,
       sender,
       recentBlockHash: blockHash || undefined,
       anchorMode: "any",
@@ -84,8 +80,8 @@ window.IMPERIUM_PayFee = {};
       return { success: true, via: "stx_transferStx", result };
     } catch (err) {
       const msg =
-        (err && err.message) ||
-        (err?.error?.message) ||
+        err?.message ||
+        err?.error?.message ||
         (typeof err === "object" ? JSON.stringify(err) : String(err));
       safeLog("[PayFee] ❌ Leather transfer error:", msg);
       throw new Error(msg);
@@ -132,8 +128,8 @@ window.IMPERIUM_PayFee = {};
       }
     } catch (err) {
       const msg =
-        (err && err.message) ||
-        (err?.error?.message) ||
+        err?.message ||
+        err?.error?.message ||
         (typeof err === "object" ? JSON.stringify(err) : String(err));
       safeLog("[PayFee] ❌ RPC transaction error:", msg);
       alert(`❌ RPC transaction error: ${msg}`);
