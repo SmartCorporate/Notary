@@ -1,5 +1,5 @@
-// payfee.js — v2.10 Imperium Notary
-// Fixed Leather v6+ RPC call + proper recentBlockHash + network object
+// payfee.js — v2.11 Imperium Notary
+// Fixed Leather strict param schema + readable error parsing
 
 window.IMPERIUM_PayFee = {};
 
@@ -53,24 +53,25 @@ window.IMPERIUM_PayFee = {};
 
     const network = sender.startsWith("SP") ? "mainnet" : "testnet";
     const blockHash = await getRecentBlockHash(network);
+    const feeMicro = Math.max(DEFAULT_FEE_MICRO, Math.floor(amountMicro * 0.002));
 
     safeLog(`[PayFee] 🌐 Using Leather provider on ${network}`);
     safeLog(`[PayFee] 💡 Block hash: ${blockHash || "(none)"}`);
 
-    const feeMicro = Math.max(DEFAULT_FEE_MICRO, Math.floor(amountMicro * 0.002));
-
     const params = {
       recipient,
-      amount: String(amountMicro),
+      amount: amountMicro, // numeric microstx
       memo: memo || "",
       network: {
         name: network,
         chainId: network === "mainnet" ? 1 : 2147483648,
         coreApiUrl: network === "mainnet" ? STACKS_MAIN : STACKS_TEST,
       },
-      fee: String(feeMicro),
+      fee: feeMicro, // numeric
       sender,
       recentBlockHash: blockHash || undefined,
+      anchorMode: "any",
+      postConditionMode: "deny",
       appDetails: {
         name: "Imperium Notary",
         icon: window.location.origin + "/favicon.ico",
@@ -82,8 +83,12 @@ window.IMPERIUM_PayFee = {};
       safeLog("[PayFee] ✅ Leather returned:", result);
       return { success: true, via: "stx_transferStx", result };
     } catch (err) {
-      safeLog("[PayFee] ❌ Leather transfer error:", err.message || err);
-      throw err;
+      const msg =
+        (err && err.message) ||
+        (err?.error?.message) ||
+        (typeof err === "object" ? JSON.stringify(err) : String(err));
+      safeLog("[PayFee] ❌ Leather transfer error:", msg);
+      throw new Error(msg);
     }
   }
 
@@ -126,8 +131,12 @@ window.IMPERIUM_PayFee = {};
         safeLog(`[PayFee] ✅ TXID: ${txid || "not returned"}`);
       }
     } catch (err) {
-      safeLog("[PayFee] ❌ RPC transaction error:", err.message || err);
-      alert(`❌ RPC transaction error: ${err.message || err}`);
+      const msg =
+        (err && err.message) ||
+        (err?.error?.message) ||
+        (typeof err === "object" ? JSON.stringify(err) : String(err));
+      safeLog("[PayFee] ❌ RPC transaction error:", msg);
+      alert(`❌ RPC transaction error: ${msg}`);
     }
   }
 
