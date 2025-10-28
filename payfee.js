@@ -1,6 +1,6 @@
-// payfee.js — v2.18 Imperium Notary (Mainnet FINAL)
-// Fix: Leather expects network = "mainnet" (string), not object
-// Confirmed working with mainnet Oct 2025
+// payfee.js — v2.19 Imperium Notary (Mainnet stable fix)
+// Workaround Leather "Error generating unsigned transaction" bug
+// Adds manual nonce and sponsored:false
 
 window.IMPERIUM_PayFee = {};
 
@@ -17,6 +17,15 @@ window.IMPERIUM_PayFee = {};
     const r = await fetch(url);
     if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
     return r.json();
+  }
+
+  async function fetchAccountNonce(stxAddress) {
+    try {
+      const j = await fetchJson(`${HIRO_API}/extended/v1/address/${stxAddress}/nonces`);
+      return Number(j?.possible_next_nonce || 0);
+    } catch {
+      return 0;
+    }
   }
 
   async function fetchStxBalance(stxAddress) {
@@ -40,6 +49,7 @@ window.IMPERIUM_PayFee = {};
     if (!provider) throw new Error("Leather provider not found.");
 
     const feeMicro = Math.max(DEFAULT_FEE_MICRO, Math.floor(amountMicro * 0.002));
+    const nonce = await fetchAccountNonce(sender);
 
     const params = {
       recipient,
@@ -47,9 +57,11 @@ window.IMPERIUM_PayFee = {};
       memo: memo || "",
       fee: String(feeMicro),
       senderAddress: sender,
-      anchorMode: 3, // on_chain_only
-      network: "mainnet", // ✅ FIXED: must be string
-      postConditionMode: "deny", // ✅ string required
+      anchorMode: 3,
+      network: "mainnet",
+      postConditionMode: "deny",
+      nonce,                  // ✅ manual nonce
+      sponsored: false,       // ✅ bypass internal builder
       appDetails: {
         name: "Imperium Notary",
         icon: window.location.origin + "/favicon.ico",
@@ -73,7 +85,6 @@ window.IMPERIUM_PayFee = {};
     }
   }
 
-  // === Send Fee ===
   async function sendFee() {
     try {
       safeLog("────────────────────────────────────────────");
