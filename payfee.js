@@ -1,6 +1,6 @@
-// payfee.js — v2.16 Imperium Notary
-// Fix Leather API structure (network object, fee string, anchorMode numeric)
-// Mainnet only + Paid flag
+// payfee.js — v2.17 Imperium Notary
+// Fix Leather Wallet (network + postConditionMode format)
+// Mainnet only + Paid flag on success
 
 window.IMPERIUM_PayFee = {};
 
@@ -43,13 +43,13 @@ window.IMPERIUM_PayFee = {};
 
     const params = {
       recipient,
-      amount: String(amountMicro), // MUST be string
+      amount: String(amountMicro),
       memo: memo || "",
-      fee: String(feeMicro),       // MUST be string
+      fee: String(feeMicro),
       senderAddress: sender,
-      anchorMode: 3,               // 3 = on_chain_only
-      network: { name: "mainnet" }, // MUST be object, not string
-      postConditionMode: 1,         // "deny" = 1
+      anchorMode: 3, // on_chain_only
+      network: { chain: "mainnet", type: "mainnet" }, // ✅ Correct new format
+      postConditionMode: "deny", // ✅ Must be string
       appDetails: {
         name: "Imperium Notary",
         icon: window.location.origin + "/favicon.ico",
@@ -127,7 +127,6 @@ window.IMPERIUM_PayFee = {};
     }
   }
 
-  // === Init ===
   function init() {
     const btn = document.getElementById("btn-notarize");
     if (btn) {
