@@ -1,12 +1,12 @@
-// payfee.js — v2.15 Imperium Notary
-// Mainnet only + set Paid = true on success + store tx id for next module.
+// payfee.js — v2.16 Imperium Notary
+// Fix Leather API structure (network object, fee string, anchorMode numeric)
+// Mainnet only + Paid flag
 
 window.IMPERIUM_PayFee = {};
 
 (function () {
-  const DEFAULT_FEE_MICRO = 10000; // minimal safe fee
+  const DEFAULT_FEE_MICRO = 10000;
   const HIRO_API = "https://api.hiro.so";
-  const STACKS_MAIN = "https://api.mainnet.hiro.so";
 
   function safeLog(...args) {
     if (window.IMPERIUM_LOG) window.IMPERIUM_LOG(args.join(" "));
@@ -34,29 +34,30 @@ window.IMPERIUM_PayFee = {};
     return window.LeatherProvider || window.LeatherWallet || null;
   }
 
+  // === Core transfer ===
   async function transferViaLeather({ sender, recipient, amountMicro, memo }) {
     const provider = getProvider();
     if (!provider) throw new Error("Leather provider not found.");
 
-    const network = "mainnet";  // **force mainnet only**
     const feeMicro = Math.max(DEFAULT_FEE_MICRO, Math.floor(amountMicro * 0.002));
-
-    safeLog(`[PayFee] 🌐 Using Leather provider on ${network}`);
 
     const params = {
       recipient,
-      amount: amountMicro,
+      amount: String(amountMicro), // MUST be string
       memo: memo || "",
-      network,                        // string "mainnet"
-      fee: feeMicro,
-      senderAddress: sender,          // required
-      anchorMode: "on_chain_only",
-      postConditionMode: "deny",
+      fee: String(feeMicro),       // MUST be string
+      senderAddress: sender,
+      anchorMode: 3,               // 3 = on_chain_only
+      network: { name: "mainnet" }, // MUST be object, not string
+      postConditionMode: 1,         // "deny" = 1
       appDetails: {
         name: "Imperium Notary",
         icon: window.location.origin + "/favicon.ico",
       },
     };
+
+    safeLog(`[PayFee] 🌐 Using Leather provider on mainnet`);
+    safeLog(`[PayFee] 🧾 Payload →`, JSON.stringify(params));
 
     try {
       const result = await provider.request("stx_transferStx", params);
@@ -72,6 +73,7 @@ window.IMPERIUM_PayFee = {};
     }
   }
 
+  // === Send Fee ===
   async function sendFee() {
     try {
       safeLog("────────────────────────────────────────────");
@@ -110,7 +112,6 @@ window.IMPERIUM_PayFee = {};
         safeLog(`[PayFee] ✅ TXID: ${txid || "not returned"}`);
         alert(`✅ Transaction submitted successfully!\nTXID:\n${txid || "Check your wallet for confirmation."}`);
 
-        // set global flag for success to be used in next module
         window.Paid = true;
         window.LastTxId = txid || null;
       }
@@ -126,6 +127,7 @@ window.IMPERIUM_PayFee = {};
     }
   }
 
+  // === Init ===
   function init() {
     const btn = document.getElementById("btn-notarize");
     if (btn) {
