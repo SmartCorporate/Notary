@@ -1,7 +1,4 @@
-// payfee.js — v2.19 Imperium Notary (Mainnet stable fix)
-// Workaround Leather "Error generating unsigned transaction" bug
-// Adds manual nonce and sponsored:false
-
+// payfee.js — v2.20 Imperium Notary (Mainnet + include publicKey)
 window.IMPERIUM_PayFee = {};
 
 (function () {
@@ -43,13 +40,25 @@ window.IMPERIUM_PayFee = {};
     return window.LeatherProvider || window.LeatherWallet || null;
   }
 
-  // === Core transfer ===
+  async function getPublicKey(sender) {
+    const provider = getProvider();
+    if (!provider) return null;
+    try {
+      const res = await provider.request("getAddresses");
+      const addrObj = res.result.addresses.find(a => a.address === sender);
+      return addrObj?.publicKey || null;
+    } catch (err) {
+      return null;
+    }
+  }
+
   async function transferViaLeather({ sender, recipient, amountMicro, memo }) {
     const provider = getProvider();
     if (!provider) throw new Error("Leather provider not found.");
 
     const feeMicro = Math.max(DEFAULT_FEE_MICRO, Math.floor(amountMicro * 0.002));
     const nonce = await fetchAccountNonce(sender);
+    const pubKey = await getPublicKey(sender);
 
     const params = {
       recipient,
@@ -60,8 +69,9 @@ window.IMPERIUM_PayFee = {};
       anchorMode: 3,
       network: "mainnet",
       postConditionMode: "deny",
-      nonce,                  // ✅ manual nonce
-      sponsored: false,       // ✅ bypass internal builder
+      nonce,
+      sponsored: false,
+      ...(pubKey ? { publicKey: pubKey } : {}),
       appDetails: {
         name: "Imperium Notary",
         icon: window.location.origin + "/favicon.ico",
