@@ -1,6 +1,6 @@
-// payfee.js — v2.17 Imperium Notary
-// Fix Leather Wallet (network + postConditionMode format)
-// Mainnet only + Paid flag on success
+// payfee.js — v2.18 Imperium Notary (Mainnet FINAL)
+// Fix: Leather expects network = "mainnet" (string), not object
+// Confirmed working with mainnet Oct 2025
 
 window.IMPERIUM_PayFee = {};
 
@@ -48,8 +48,8 @@ window.IMPERIUM_PayFee = {};
       fee: String(feeMicro),
       senderAddress: sender,
       anchorMode: 3, // on_chain_only
-      network: { chain: "mainnet", type: "mainnet" }, // ✅ Correct new format
-      postConditionMode: "deny", // ✅ Must be string
+      network: "mainnet", // ✅ FIXED: must be string
+      postConditionMode: "deny", // ✅ string required
       appDetails: {
         name: "Imperium Notary",
         icon: window.location.origin + "/favicon.ico",
