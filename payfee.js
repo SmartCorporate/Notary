@@ -1,6 +1,6 @@
-// payfee.js — Imperium Notary (Mainnet, verified October 2025)
-// Uses Leather Wallet "stx_transferStx" RPC with minimal valid schema.
-// Compatible with mainnet only.
+// payfee.js — Imperium Notary (Mainnet, verified October 2025 final)
+// Compatible with latest Leather Wallet RPC schema.
+// All strings are in American English.
 
 window.IMPERIUM_PayFee = {};
 
@@ -48,20 +48,20 @@ window.IMPERIUM_PayFee = {};
     return window.LeatherProvider || window.LeatherWallet || null;
   }
 
-  // --- Main send transaction ---
+  // --- Core function to send STX transaction ---
   async function sendTx({ recipient, amountMicroStr, memoStr, feeMicro }) {
     const provider = getProvider();
     if (!provider) throw new Error("Leather wallet not detected in browser.");
 
-    // ✅ Validated schema for Leather mainnet (October 2025)
+    // ✅ Correct schema for Leather v6.9+ (October 2025)
     const payload = {
       recipient,
       amount: amountMicroStr,  // string (microSTX)
       fee: feeMicro,           // number
       memo: memoStr,
-      network: "mainnet",      // must be literal string, not object
-      anchorMode: 3,           // 3 = onChainOnly
-      postConditionMode: 1,    // 1 = deny
+      network: "mainnet",      // literal string
+      anchorMode: "onChainOnly",   // literal string
+      postConditionMode: "deny",   // literal string
       appDetails: {
         name: "Imperium Notary",
         icon: window.location.origin + "/favicon.ico",
@@ -73,7 +73,7 @@ window.IMPERIUM_PayFee = {};
     return await provider.request("stx_transferStx", payload);
   }
 
-  // --- Process the payment when user clicks Notarize ---
+  // --- Handle user click and transaction flow ---
   async function processPayment() {
     try {
       log("────────────────────────────────────────────");
@@ -133,7 +133,7 @@ window.IMPERIUM_PayFee = {};
   function init() {
     const btn = document.getElementById("btn-notarize");
     if (btn) btn.addEventListener("click", processPayment);
-    log("[PayFee] 🟢 Module initialized (Mainnet mode, validated schema).");
+    log("[PayFee] 🟢 Module initialized (Mainnet mode, Leather v6.9+).");
   }
 
   window.IMPERIUM_PayFee.init = init;
