@@ -1,89 +1,107 @@
-// connection.js — Imperium Notary (Mainnet + Leather v6.9+)
-// Handles wallet connection and stores address + publicKey globally
+// 27 Oct 2025 - CONNECTION + INSTALL PROMPT (ENGLISH VERSION)
+// connection.js
+// Exclusive connection to Stacks (STX) via Leather Wallet
 
 window.IMPERIUM_Connection = {};
 
-(function () {
-  function log(...msg) {
-    if (window.IMPERIUM_LOG) window.IMPERIUM_LOG(msg.join(" "));
-    else console.log(...msg);
-  }
+(async function () {
 
-  // Helper: get Leather provider
-  function getProvider() {
-    return window.LeatherProvider || window.LeatherWallet || null;
-  }
+  const WALLET_STORE_URL =
+    "https://chrome.google.com/webstore/detail/leather-wallet/ldinpeekobnhjjdofggfgjlcehhmanlj";
 
-  // 🔌 Connect wallet
   async function connectWallet() {
     try {
-      const provider = getProvider();
+      const provider = window.LeatherProvider || window.LeatherWallet;
+
+      // 🔍 CHECK: if Leather Wallet is not installed → prompt user
       if (!provider) {
-        alert("⚠️ Leather Wallet not detected. Please install or enable it.");
-        log("[Connection] ❌ Leather Wallet not found.");
+        window.IMPERIUM_LOG("❌ [Connection] Leather Wallet not found.");
+        const msg =
+`⚠️ Leather Wallet was not detected.
+To use Imperium Notary, you need to install the Leather Wallet extension.
+
+Would you like to open the Chrome Web Store page now?`;
+        if (confirm(msg)) {
+          window.open(WALLET_STORE_URL, "_blank");
+        } else {
+          alert("Installation canceled. The wallet is required to continue.");
+        }
         return;
       }
 
-      log("🔌 [Connection] Initializing Leather Wallet connection...");
+      window.IMPERIUM_LOG("🔌 [Connection] Initializing Leather Wallet connection...");
 
-      // Request addresses from Leather
-      const result = await provider.request("getAddresses");
-      console.log("🧾 getAddresses →", result);
+      // Retrieve all addresses from the wallet
+      const response = await provider.request("getAddresses");
+      const addresses = response?.result?.addresses || response?.addresses || [];
+      console.log("🧾 getAddresses →", addresses);
 
-      if (!Array.isArray(result) || result.length === 0) {
-        alert("⚠️ No addresses found in Leather Wallet.");
+      // Find ONLY the STX address
+      const stxAddr = addresses.find(a =>
+        a.symbol === "STX" ||
+        a.type === "stacks" ||
+        (a.network && a.network.includes("stacks"))
+      )?.address;
+
+      if (!stxAddr) {
+        window.IMPERIUM_LOG("⚠️ [Connection] No STX address found in the wallet.");
+        alert("No STX address detected. Make sure Leather is set to Stacks Mainnet or Testnet.");
         return;
       }
 
-      // Use the first STX address (payment purpose)
-      const mainAddr = result.find((a) => a.purpose === "payment") || result[0];
+      // Update UI
+      const walletText = document.getElementById("wallet-text");
+      const walletLed = document.getElementById("wallet-status");
+      const connectBtn = document.getElementById("connect-btn");
+      const disconnectBtn = document.getElementById("disconnect-btn");
 
-      // ✅ Store globally for all other modules
-      window.STXAddress = mainAddr.address;
-      window.CurrentPublicKey = mainAddr.publicKey;
+      walletText.textContent = `Connected: ${stxAddr}`;
+      walletLed.classList.remove("red");
+      window.IMPERIUM_LED.setDisconnected();
+      walletLed.classList.add("green");
+      window.IMPERIUM_LED.setConnected();
+      connectBtn.classList.add("hidden");
+      disconnectBtn.classList.remove("hidden");
 
-      // Update LED indicators
-      updateLED(true);
+      // Save STX address globally
+      window.IMPERIUM_Connection.currentAddress = stxAddr;
+      window.IMPERIUM_LOG(`✅ [Connection] STX address connected: ${stxAddr}`);
+      window.STXAddress = stxAddr;
+      window.IMPERIUM_LOG(`[Connection] Global STXAddress variable updated.`);
 
-      log(`✅ [Connection] STX address connected: ${mainAddr.address}`);
-      log("[Connection] Global STXAddress and CurrentPublicKey updated.");
-
-      // Inform user visually (optional)
-      const statusEl = document.getElementById("wallet-status");
-      if (statusEl) {
-        statusEl.textContent = "Connected: " + mainAddr.address.slice(0, 8) + "...";
-        statusEl.style.color = "#00cc66";
-      }
     } catch (err) {
-      log("[Connection] ❌ Error connecting wallet:", err.message || err);
-      updateLED(false);
-      alert("⚠️ Error connecting wallet. Please retry.");
+      console.error(err);
+      alert(`Wallet connection error: ${err.message}`);
+      window.IMPERIUM_LOG(`❌ [Connection] Error: ${err.message}`);
     }
   }
 
-  // 🔴🟢 LED indicator handler
-  function updateLED(isConnected) {
-    const led = document.getElementById("wallet-led");
-    if (!led) return;
-    if (isConnected) {
-      led.style.background = "#00ff00";
-      log("🟢 [LED] Wallet connected (green).");
-    } else {
-      led.style.background = "#ff0000";
-      log("🔴 [LED] Wallet disconnected (red).");
-    }
+  function disconnectWallet() {
+    const walletText = document.getElementById("wallet-text");
+    const walletLed = document.getElementById("wallet-status");
+    const connectBtn = document.getElementById("connect-btn");
+    const disconnectBtn = document.getElementById("disconnect-btn");
+
+    walletText.textContent = "Wallet: disconnected";
+    walletLed.classList.remove("green");
+    walletLed.classList.add("red");
+    connectBtn.classList.remove("hidden");
+    disconnectBtn.classList.add("hidden");
+
+    window.IMPERIUM_Connection.currentAddress = null;
+    window.IMPERIUM_LOG("🔌 [Connection] Wallet disconnected.");
   }
 
-  // 🌐 Auto-init check
   function init() {
-    const btn = document.getElementById("btn-connect");
-    if (btn) btn.addEventListener("click", connectWallet);
-    updateLED(false);
-    log("🟡 [Connection] STX connection module ready.");
+    const connectBtn = document.getElementById("connect-btn");
+    const disconnectBtn = document.getElementById("disconnect-btn");
+
+    if (connectBtn) connectBtn.addEventListener("click", connectWallet);
+    if (disconnectBtn) disconnectBtn.addEventListener("click", disconnectWallet);
+
+    window.IMPERIUM_LOG("🟡 [Connection] STX connection module ready.");
   }
 
-  // Public methods
-  window.IMPERIUM_Connection.connect = connectWallet;
-  window.IMPERIUM_Connection.updateLED = updateLED;
   window.IMPERIUM_Connection.init = init;
+
 })();
