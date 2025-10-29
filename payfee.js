@@ -1,6 +1,5 @@
-// payfee.js — Imperium Notary (Mainnet, verified October 2025 final)
-// Compatible with latest Leather Wallet RPC schema.
-// All strings are in American English.
+// payfee.js — Imperium Notary (Mainnet final, October 2025)
+// Compatible with Leather v6.9+ (requires senderAddress + publicKey)
 
 window.IMPERIUM_PayFee = {};
 
@@ -48,20 +47,27 @@ window.IMPERIUM_PayFee = {};
     return window.LeatherProvider || window.LeatherWallet || null;
   }
 
-  // --- Core function to send STX transaction ---
+  // --- Core send transaction ---
   async function sendTx({ recipient, amountMicroStr, memoStr, feeMicro }) {
     const provider = getProvider();
     if (!provider) throw new Error("Leather wallet not detected in browser.");
 
-    // ✅ Correct schema for Leather v6.9+ (October 2025)
+    const sender = window.STXAddress;
+    const pubKey = window.CurrentPublicKey || window.IMPERIUM_Connection?.currentPublicKey;
+    if (!sender) throw new Error("No sender address found.");
+    if (!pubKey) throw new Error("No public key found.");
+
+    // ✅ Leather v6.9+ schema (requires senderAddress + publicKey)
     const payload = {
       recipient,
-      amount: amountMicroStr,  // string (microSTX)
-      fee: feeMicro,           // number
+      amount: amountMicroStr,
+      fee: feeMicro,
       memo: memoStr,
-      network: "mainnet",      // literal string
-      anchorMode: "onChainOnly",   // literal string
-      postConditionMode: "deny",   // literal string
+      network: "mainnet",
+      anchorMode: "onChainOnly",
+      postConditionMode: "deny",
+      senderAddress: sender,
+      publicKey: pubKey,
       appDetails: {
         name: "Imperium Notary",
         icon: window.location.origin + "/favicon.ico",
@@ -69,11 +75,10 @@ window.IMPERIUM_PayFee = {};
     };
 
     log("[PayFee] 🌐 Leather payload → " + JSON.stringify(payload));
-
     return await provider.request("stx_transferStx", payload);
   }
 
-  // --- Handle user click and transaction flow ---
+  // --- Main process flow ---
   async function processPayment() {
     try {
       log("────────────────────────────────────────────");
@@ -133,7 +138,7 @@ window.IMPERIUM_PayFee = {};
   function init() {
     const btn = document.getElementById("btn-notarize");
     if (btn) btn.addEventListener("click", processPayment);
-    log("[PayFee] 🟢 Module initialized (Mainnet mode, Leather v6.9+).");
+    log("[PayFee] 🟢 Module initialized (Mainnet + publicKey).");
   }
 
   window.IMPERIUM_PayFee.init = init;
