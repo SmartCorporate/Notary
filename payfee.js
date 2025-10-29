@@ -1,5 +1,6 @@
-// payfee.js — Imperium Notary (Leather Mainnet Network Object Fix)
-// 2025-10 verified fix for "Error generating unsigned transaction"
+// payfee.js — Imperium Notary (Mainnet, verified October 2025)
+// Uses Leather Wallet "stx_transferStx" RPC with minimal valid schema.
+// Compatible with mainnet only.
 
 window.IMPERIUM_PayFee = {};
 
@@ -47,25 +48,20 @@ window.IMPERIUM_PayFee = {};
     return window.LeatherProvider || window.LeatherWallet || null;
   }
 
+  // --- Main send transaction ---
   async function sendTx({ recipient, amountMicroStr, memoStr, feeMicro }) {
     const provider = getProvider();
     if (!provider) throw new Error("Leather wallet not detected in browser.");
 
-    // ✅ Leather richiede network come oggetto completo
-    const network = {
-      name: "mainnet",
-      chainId: 1,
-      coreApiUrl: "https://api.hiro.so",
-    };
-
+    // ✅ Validated schema for Leather mainnet (October 2025)
     const payload = {
       recipient,
-      amount: amountMicroStr, // string
-      fee: feeMicro,          // number
+      amount: amountMicroStr,  // string (microSTX)
+      fee: feeMicro,           // number
       memo: memoStr,
-      network,                // oggetto, non string
-      anchorMode: "onChainOnly",
-      postConditionMode: "deny",
+      network: "mainnet",      // must be literal string, not object
+      anchorMode: 3,           // 3 = onChainOnly
+      postConditionMode: 1,    // 1 = deny
       appDetails: {
         name: "Imperium Notary",
         icon: window.location.origin + "/favicon.ico",
@@ -77,6 +73,7 @@ window.IMPERIUM_PayFee = {};
     return await provider.request("stx_transferStx", payload);
   }
 
+  // --- Process the payment when user clicks Notarize ---
   async function processPayment() {
     try {
       log("────────────────────────────────────────────");
@@ -132,10 +129,11 @@ window.IMPERIUM_PayFee = {};
     }
   }
 
+  // --- Initialize module ---
   function init() {
     const btn = document.getElementById("btn-notarize");
     if (btn) btn.addEventListener("click", processPayment);
-    log("[PayFee] 🟢 Module initialized (Mainnet mode with network object).");
+    log("[PayFee] 🟢 Module initialized (Mainnet mode, validated schema).");
   }
 
   window.IMPERIUM_PayFee.init = init;
