@@ -1,5 +1,5 @@
-// payfee.js — Imperium Notary Mainnet
-// Revised payload: only valid fields accepted by Leather v6.x
+// payfee.js — Imperium Notary (Leather Mainnet Network Object Fix)
+// 2025-10 verified fix for "Error generating unsigned transaction"
 
 window.IMPERIUM_PayFee = {};
 
@@ -51,12 +51,19 @@ window.IMPERIUM_PayFee = {};
     const provider = getProvider();
     if (!provider) throw new Error("Leather wallet not detected in browser.");
 
+    // ✅ Leather richiede network come oggetto completo
+    const network = {
+      name: "mainnet",
+      chainId: 1,
+      coreApiUrl: "https://api.hiro.so",
+    };
+
     const payload = {
       recipient,
       amount: amountMicroStr, // string
       fee: feeMicro,          // number
       memo: memoStr,
-      network: "mainnet",
+      network,                // oggetto, non string
       anchorMode: "onChainOnly",
       postConditionMode: "deny",
       appDetails: {
@@ -94,7 +101,7 @@ window.IMPERIUM_PayFee = {};
       }
 
       const amountMicroStr = toMicro(amountSTX);
-      const feeMicro = DEFAULT_FEE_MICRO; // can be raised if needed
+      const feeMicro = DEFAULT_FEE_MICRO;
 
       log(`[PayFee] 🚀 Sending ${amountSTX} STX → ${receiver}`);
 
@@ -128,7 +135,7 @@ window.IMPERIUM_PayFee = {};
   function init() {
     const btn = document.getElementById("btn-notarize");
     if (btn) btn.addEventListener("click", processPayment);
-    log("[PayFee] 🟢 Module initialized (Mainnet mode).");
+    log("[PayFee] 🟢 Module initialized (Mainnet mode with network object).");
   }
 
   window.IMPERIUM_PayFee.init = init;
